@@ -1,0 +1,24 @@
+# data: never commit (no license on the replay dataset)
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# big outputs
+*.parquet
+*.pkl
+*.joblib
+models_saved/
+
+# os / editors
+.DS_Store
+.vscode/
+.idea/

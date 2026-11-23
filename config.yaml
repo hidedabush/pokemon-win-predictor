@@ -1,0 +1,40 @@
+# All project settings. Read with src.utils.load_config(); don't hard-code these.
+
+seed: 42
+
+data:
+  hf_dataset: HolidayOugi/pokemon-showdown-replays
+  formatid: gen9ou
+  sample_size: 100000          # battles to keep after filtering
+  min_rating: 1300             # drop low-ladder games
+  max_rating_gap: 100          # keep battles where |p1_rating - p2_rating| <= this
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+
+split:                         # time-based: oldest -> train, newest -> test
+  train: 0.70
+  val: 0.15
+  test: 0.15
+
+features:
+  stat_names: [hp, atk, def, spa, spd, spe]
+  use_species_onehot: true     # +1 on team A, -1 on team B
+  swap_augment: true           # add each battle again with teams swapped and label flipped
+
+models:
+  logistic:
+    C_grid: [0.001, 0.01, 0.1, 1.0, 10.0]   # inverse L2 strength, tuned on val
+  random_forest:
+    n_estimators: 300
+    max_depth_grid: [5, 10, 20, null]
+  gradient_boosting:
+    learning_rate: 0.1
+    max_depth_grid: [3, 5, 7]
+
+evaluation:
+  calibration_bins: 10
+
+paths:
+  results_dir: results
+  figures_dir: figures

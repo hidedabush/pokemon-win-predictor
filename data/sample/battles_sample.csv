@@ -1,0 +1,5 @@
+battle_id,upload_time,p1_team,p2_team,p1_rating,p2_rating,p1_win
+fake-0001,1730000000,"greattusk|kingambit|gholdengo|dragonite|ironvaliant|corviknight","garganacl|ragingbolt|samurotthisui|ironmoth|landorustherian|ogerponwellspring",1512,1498,1
+fake-0002,1730000100,"dragapult|gliscor|ironcrown|zamazenta|primarina|ironmoth","kingambit|greattusk|gholdengo|dondozo|clodsire|corviknight",1620,1605,0
+fake-0003,1730000200,"ogerponwellspring|ragingbolt|kingambit|ironvaliant|greattusk|dragapult","gliscor|garganacl|zamazenta|gholdengo|samurotthisui|primarina",1455,1470,1
+fake-0004,1730000300,"corviknight|dondozo|clodsire|gholdengo|greattusk|ironcrown","dragonite|kingambit|ironvaliant|ragingbolt|landorustherian|dragapult",1701,1688,0

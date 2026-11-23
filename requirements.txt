@@ -1,0 +1,14 @@
+numpy
+pandas
+pyarrow
+polars
+datasets
+huggingface_hub
+scikit-learn
+matplotlib
+pyyaml
+tqdm
+pytest
+# optional extras
+poke-env      # Pokédex/type chart data + luck simulations
+# torch       # only if we build the MLP / attention model
