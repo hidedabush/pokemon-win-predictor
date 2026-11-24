@@ -1,12 +1,16 @@
 """Turn raw Showdown logs into one clean row per battle.        Owner: Alexander
 
-Input:  data/raw/gen9ou_raw.parquet
+Input:  data/raw/gen9ou_slim.parquet  (made by src/data/download.py)
+        columns: battle_id, upload_time, players, rating, log_slim
+        log_slim = only the |player|, |poke| and |win| lines of the log, joined by "\n"
 Output: data/interim/battles.parquet  (format defined in data/README.md)
 
-Relevant log lines (check these on real replays first):
+Lines in log_slim:
     |player|p1|<name>|<avatar>|<rating>
     |poke|p1|<Species>, L<level>, <gender>|      (team preview, 6 per side)
     |win|<name>
+Real logs also end with empty "|player|p1|" / "|player|p2|" lines (players leaving),
+so use the first |player| line for each side.
 
 TODO
 - [ ] parse_log(): return dict with p1_team, p2_team, p1_rating, p2_rating, p1_win (or None if unusable)

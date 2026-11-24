@@ -4,6 +4,7 @@ pyarrow
 polars
 datasets
 huggingface_hub
+duckdb
 scikit-learn
 matplotlib
 pyyaml

@@ -5,6 +5,10 @@ seed: 42
 data:
   hf_dataset: HolidayOugi/pokemon-showdown-replays
   formatid: gen9ou
+  min_upload_date: "2025-06-01"  # UTC; only replays uploaded on/after this day
+  max_rows: null               # cap on rows downloaded (null = all that match)
+  slim_file: gen9ou_slim.parquet   # written to raw_dir by src/data/download.py
+  hf_path_glob: "**/*.parquet" # only used if no file is named after formatid
   sample_size: 100000          # battles to keep after filtering
   min_rating: 1300             # drop low-ladder games
   max_rating_gap: 100          # keep battles where |p1_rating - p2_rating| <= this
