@@ -6,10 +6,10 @@ import pytest
 
 from src.features.build_features import (FEATURE_GROUPS, LABEL, LearnedScores, SpeciesTable,
                                          as_team, build_features, feature_columns,
-                                         fit_species_vocab, out_of_fold_scores,
+                                         fit_species_vocab, load_features, out_of_fold_scores,
                                          species_features, swap_augment)
-from src.features.pokedex import (TYPES, effectiveness_vs, load_pokedex, load_type_chart,
-                                  missing_species, multiplier)
+from src.features.pokedex import (TYPES, effectiveness_vs, load_aliases, load_pokedex,
+                                  load_type_chart, missing_species, multiplier)
 from src.utils import ROOT, load_config
 
 STATS = ["hp", "atk", "def", "spa", "spd", "spe"]
@@ -52,6 +52,25 @@ def test_ability_immunity_only_when_sure(dex, chart):
     # (0.5x on Fire, 2x on Steel); Ground is 4x
     assert multiplier("fire", dex["heatran"], chart) == 1
     assert multiplier("ground", dex["heatran"], chart) == 4
+
+
+def test_cosmetic_forms_merge_but_real_forms_dont(dex):
+    aliases = load_aliases(dex)
+    assert aliases["alcremierubycream"] == "alcremie"
+    assert aliases["florgesblue"] == "florges"
+    assert aliases["sinistchamasterpiece"] == "sinistcha"
+    for real_form in ["rotomwash", "ogerponwellspring", "landorustherian", "toxtricitylowkey",
+                      "samurotthisui", "basculegionf"]:
+        assert real_form not in aliases
+    assert set(aliases.values()) <= set(dex)
+
+
+def test_aliases_merge_species_columns(dex, chart):
+    table = SpeciesTable(dex, chart, STATS, load_aliases(dex))
+    f = build_features(battles([(["alcremierubycream"], ["alcremie"], 1500, 1500, 1)]),
+                       table, vocab=["alcremie", "alcremierubycream"]).iloc[0]
+    # same Pokémon on both sides -> every feature is 0, and no column for the cosmetic ID
+    assert (f[feature_columns(f.index, drop_groups=["rating"])] == 0).all()
 
 
 def test_type_chart_is_attacker_first(chart):
@@ -255,6 +274,18 @@ def test_output_columns_on_sample(table, sample):
     assert groups == set(FEATURE_GROUPS)
     assert "rating_diff" not in feature_columns(f.columns, drop_groups=["rating"])
     assert not f[feature_columns(f.columns)].isna().any().any()
+
+
+def test_load_features(table, sample, tmp_path):
+    f = swap_augment(build_features(sample, table, vocab=[]))
+    f.to_parquet(tmp_path / "train_features.parquet", index=False)
+    X, y = load_features("train", processed_dir=tmp_path)
+    assert list(X.columns) == feature_columns(f.columns)
+    assert not {"battle_id", "swapped", LABEL} & set(X.columns)
+    assert len(X) == len(y) == 2 * len(sample) and (X.index == y.index).all()
+    assert X.index[0] == sample.battle_id[0]
+    X, _ = load_features("train", drop_groups=["rating"], processed_dir=tmp_path)
+    assert "rating_diff" not in X.columns
 
 
 def test_config_has_feature_settings():
