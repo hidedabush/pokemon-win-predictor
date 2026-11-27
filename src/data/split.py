@@ -1,4 +1,4 @@
-"""Time-based train / val / test split.        Owner: Alexander
+"""Time-based train / val / test split.
 
 Input:  data/interim/battles.parquet
 Output: data/interim/{train,val,test}.parquet

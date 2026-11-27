@@ -1,5 +1,4 @@
-"""Run with: pytest
-Add a test_parse_logs.py with 2–3 real log snippets once parsing works (Alexander)."""
+"""Run with: pytest"""
 
 import pandas as pd
 

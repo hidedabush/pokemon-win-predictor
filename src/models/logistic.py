@@ -1,4 +1,4 @@
-"""L2-regularized logistic regression.        Owner: Nguyen Hang
+"""L2-regularized logistic regression.
 
 Course link (Methods section): sigmoid output = P(p1 wins); trained by minimizing
 cross-entropy (= log loss) with gradient-based optimization; L2 penalty controls overfitting

@@ -7,18 +7,11 @@
 - Figures come from `figures/`, tables from `results/`.
 - Citations go in `references.bib`. Double-check every entry before submitting.
 
-## Section owners
+## Sections
 
-| Section | Owner |
-|---|---|
-| Abstract, Introduction, Conclusion | Everyone (Sat 11/28) |
-| Background | Andy |
-| Data | Alexander |
-| Methods: features | Andy |
-| Methods: models | Nguyen Hang |
-| Experiments: main results table | Nguyen Hang |
-| Experiments: figures, ablation | Ruel |
-| Experiments: wrong predictions | Andy |
+Abstract · Introduction · Background · Data · Methods (features, models) · Experiments (main
+results table, figures, ablation, wrong predictions) · Conclusion. Who writes which is in the
+Responsibilities table in the main [README](../README.md).
 
 ## Methods: tie every choice to class
 

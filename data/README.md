@@ -58,7 +58,7 @@ same `to_id()` helper in `src/utils.py` everywhere). Watch out for forms at team
 `data/sample/battles_sample.csv` is a tiny **fake** file in this format so features and
 models can be built before the real data is ready. Replace it with real rows once parsing works.
 
-## Things to check first (Alexander)
+## Things to check first
 
 Checked on all 1,190,747 logs in `data/raw/gen9ou_slim.parquet` (run 11/27). The same numbers
 are written to `data/interim/data_stats.json` (not committed) for the report's Data section.
@@ -126,8 +126,9 @@ within 1 point of 50%.
 ### Species IDs with a form in the final data (for the Pokédex keys)
 
 Every distinct ID in `battles.parquet` whose original name contained `-` (105 IDs; the full
-`id -> original name` map is `form_species` in `data_stats.json`). **Not yet checked against
-poke-env's Pokédex**; Andy, please check these first:
+`id -> original name` map is `form_species` in `data_stats.json`). **All 105 are keys in
+poke-env's Gen 9 Pokédex** (checked 11/27); `python -m src.features.pokedex` re-checks every
+species in `battles.parquet`.
 
 - **Hidden form, mapped to the base species:** `zamazenta` (Zamazenta-\*), `greninja`
   (Greninja-\*), `dudunsparce` (Dudunsparce-\*).

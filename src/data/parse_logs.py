@@ -1,4 +1,4 @@
-"""Turn raw Showdown logs into one clean row per battle.        Owner: Alexander
+"""Turn raw Showdown logs into one clean row per battle.
 
 Input:  data/raw/gen9ou_slim.parquet  (made by src/data/download.py)
         columns: battle_id, upload_time, players, rating, log_slim

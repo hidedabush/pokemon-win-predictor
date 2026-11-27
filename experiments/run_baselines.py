@@ -1,4 +1,4 @@
-"""Score every baseline on val and test.        Owner: Andy
+"""Score every baseline on val and test.
 
 Output: results/baselines.csv  (model, split, accuracy, log_loss, brier)
 """

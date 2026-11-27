@@ -10,6 +10,6 @@ matplotlib
 pyyaml
 tqdm
 pytest
+poke-env      # Pokédex + type chart data (features)
 # optional extras
-poke-env      # Pokédex/type chart data + luck simulations
 # torch       # only if we build the MLP / attention model

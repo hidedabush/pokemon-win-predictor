@@ -1,4 +1,4 @@
-"""Download Gen 9 OU replays from Hugging Face.        Owner: Alexander
+"""Download Gen 9 OU replays from Hugging Face.
 
 Output: data/raw/gen9ou_slim.parquet, one row per battle, with columns
     battle_id, upload_time, players, rating, log_slim

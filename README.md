@@ -13,39 +13,34 @@ problem definition, methodology).
 
 ```
 raw replays (Hugging Face, parquet)
-   │  src/data/download.py        ← Alexander
+   │  src/data/download.py
    ▼
 data/raw/gen9ou_slim.parquet     (1.19M battles, only the log lines we need)
-   │  src/data/parse_logs.py      ← Alexander
+   │  src/data/parse_logs.py
    ▼
 data/interim/battles.parquet      (shared format: see data/README.md)
-   │  src/data/split.py           ← Alexander
+   │  src/data/split.py
    ▼
 data/interim/{train,val,test}.parquet
-   │  src/features/build_features.py  ← Alexander
+   │  src/features/build_features.py
    ▼
 data/processed/{train,val,test}_features.parquet
-   │  src/models/*  +  experiments/*  ← Andy, Nguyen Hang, Ruel
+   │  src/models/*  +  experiments/*
    ▼
 results/*.csv  +  figures/*.png  →  report/
 ```
 
-## Who owns what
+## Responsibilities
 
 | Person | Code | Report sections |
 |---|---|---|
-| Alexander | `src/data/`, `src/features/` | Data |
+| Alexander | `src/data/`, `src/features/` (in progress) | Data |
 | Andy | `src/models/baselines.py`, `experiments/run_baselines.py` | Background, Methods (features), Experiments (wrong predictions) |
 | Nguyen Hang | `src/models/logistic.py`, `experiments/run_main.py` | Methods (models), Experiments (main table) |
 | Ruel | `src/models/trees.py`, `src/evaluation/`, `experiments/run_ablation.py`, `src/simulation/` | Experiments (figures, ablation) |
 | Everyone | | Abstract, Introduction, Conclusion |
 
-**Updated 11/27:** Alexander is building features now (`src/features/`, in progress) so the
-model steps aren't blocked. Please don't start on it. To keep the load even, Andy takes the
-baselines (from Nguyen Hang) and the wrong-predictions examples (from Ruel) and still writes
-Background and Methods (features).
-
-Write what you did in `CONTRIBUTIONS.md` as you go. It becomes the page-1 footnote.
+Log finished work in `CONTRIBUTIONS.md`; it becomes the page-1 footnote.
 
 ## Setup
 
@@ -62,7 +57,7 @@ pip install -r requirements.txt
 | 1. Download | `src/data/download.py` | ✅ Done: 1,190,747 battles (Jun 2025 – Oct 2026) |
 | 2. Parse logs | `src/data/parse_logs.py` | ✅ Done: 533,490 clean battles → 100,000 sampled (`data/interim/battles.parquet`) |
 | 3. Split | `src/data/split.py` | ✅ Done: 70k / 15k / 15k by time (train to 2026-04-08, test from 2026-07-01) |
-| 4. Features | `src/features/pokedex.py`, `build_features.py` | 🟡 In progress (Alexander) |
+| 4. Features | `src/features/pokedex.py`, `build_features.py` | 🟡 Code done and tested; real-data run pending |
 | 5. Baselines + logistic regression | `src/models/baselines.py`, `logistic.py`, `experiments/run_baselines.py`, `run_main.py` | ⬜ To do |
 | 6. Trees, figures, ablation | `src/models/trees.py`, `src/evaluation/plots.py`, `experiments/run_ablation.py` | ⬜ To do |
 
@@ -112,8 +107,11 @@ real data. You don't have to wait, though:
 
 1. **Write the model code against the shared formats now.** `src/models/logistic.py` gets
    `X_train, y_train, X_val, y_val`: a feature table plus the `p1_win` label. Column names
-   start with their group (`stats_`, `types_`, `match_`, `species_`, `rating_`), so
-   "teams only" just means dropping the `rating_*` columns.
+   start with their group (`stats_`, `types_`, `match_`, `species_`, `learned_`, `rating_`),
+   and every feature is p1 − p2 (what each one means is at the top of `build_features.py`). Pick columns with `feature_columns(df.columns)` from
+   `src/features/build_features.py`; "teams only" is
+   `feature_columns(df.columns, drop_groups=["rating"])`. The files also hold `battle_id`,
+   `swapped` (1 = swap-augmented copy, train only) and `p1_win`, which aren't features.
 2. **Test it on a small fake feature table**, e.g. a few hundred rows of random numbers with
    those column prefixes and a random 0/1 label. Make sure the C grid loop runs and the
    function returns a model and val log losses. Score everything with

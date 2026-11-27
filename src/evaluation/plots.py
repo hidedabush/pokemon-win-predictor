@@ -1,4 +1,4 @@
-"""Report figures. Save every figure to figures/ as PNG (300 dpi).        Owner: Ruel
+"""Report figures. Save every figure to figures/ as PNG (300 dpi).
 
 Figures for the report:
     1. calibration_plot      predicted vs. actual win rate in 10 bins, one line per model
