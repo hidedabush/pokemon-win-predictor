@@ -4,6 +4,9 @@ COSC 4368 Final Project: Alexander Mayer, Andy Nguyen, Nguyen Hang, Ruel Cabadin
 
 Given both six-Pokémon teams at team preview (Gen 9 OU), predict the probability that each side wins.
 
+New here? Read [project_overview.txt](project_overview.txt) first (motivation,
+problem definition, methodology).
+
 **Internal deadline:** Mon Nov 30 · **Real deadline:** Fri Dec 11, 11:59pm
 
 ## Pipeline
@@ -12,7 +15,7 @@ Given both six-Pokémon teams at team preview (Gen 9 OU), predict the probabilit
 raw replays (Hugging Face, parquet)
    │  src/data/download.py        ← Alexander
    ▼
-data/raw/*.parquet
+data/raw/gen9ou_slim.parquet     (1.19M battles, only the log lines we need)
    │  src/data/parse_logs.py      ← Alexander
    ▼
 data/interim/battles.parquet      (shared format: see data/README.md)
@@ -47,19 +50,74 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Running (once the stubs are filled in)
+## Status
+
+| Step | Script | Status |
+|---|---|---|
+| 1. Download | `src/data/download.py` | ✅ Done: 1,190,747 battles (Jun 2025 – Oct 2026) |
+| 2. Parse logs | `src/data/parse_logs.py` | ⬜ To do (next, unblocks everyone) |
+| 3. Split | `src/data/split.py` | ⬜ To do |
+| 4. Features | `src/features/pokedex.py`, `build_features.py` | ⬜ To do |
+| 5. Baselines + logistic regression | `src/models/baselines.py`, `logistic.py`, `experiments/run_baselines.py`, `run_main.py` | ⬜ To do |
+| 6. Trees, figures, ablation | `src/models/trees.py`, `src/evaluation/plots.py`, `experiments/run_ablation.py` | ⬜ To do |
+
+Update this table when you finish a step.
+
+## Running, step by step
+
+Each step reads the previous step's output, so run them in order. All settings (date range,
+rating filter, split sizes, seed) live in `config.yaml`. Don't hard-code them.
+
+**1. Get the data (once per machine, ~15 min).** Needs a free Hugging Face login, or the
+download gets rate-limited: `hf auth login` and paste a "Read" token from
+https://huggingface.co/settings/tokens. Details in [data/README.md](data/README.md).
 
 ```bash
-python -m src.data.download          # pull Gen 9 OU replays
-python -m src.data.parse_logs        # logs -> battles.parquet
-python -m src.data.split             # time-based train/val/test
-python -m src.features.build_features
-python -m experiments.run_baselines
-python -m experiments.run_main
-python -m experiments.run_ablation
+python -m src.data.download --check     # ~1 min sanity check
+python -m src.data.download             # -> data/raw/gen9ou_slim.parquet (169 MB)
+python -m src.data.download --inspect   # quick quality check
 ```
 
-All settings (sample size, rating filter, split sizes, seed) live in `config.yaml`. Don't hard-code them.
+**2. Turn logs into clean battles and split them by time.**
+
+```bash
+python -m src.data.parse_logs           # -> data/interim/battles.parquet
+python -m src.data.split                # -> data/interim/{train,val,test}.parquet
+```
+
+**3. Build features.**
+
+```bash
+python -m src.features.build_features   # -> data/processed/{train,val,test}_features.parquet
+```
+
+**4. Train and evaluate.**
+
+```bash
+python -m experiments.run_baselines     # -> results/baselines.csv
+python -m experiments.run_main          # tunes on val, scores test once -> results/main_results.csv
+python -m experiments.run_ablation      # -> results/ablation.csv, figures/ablation_bar.png
+pytest                                  # run the tests any time
+```
+
+### Getting started with training
+
+Training needs the feature files from step 3, so until steps 2–3 exist you can't train on
+real data. You don't have to wait, though:
+
+1. **Write the model code against the shared formats now.** `src/models/logistic.py` gets
+   `X_train, y_train, X_val, y_val`: a feature table plus the `p1_win` label. Column names
+   start with their group (`stats_`, `types_`, `match_`, `species_`, `rating_`), so
+   "teams only" just means dropping the `rating_*` columns.
+2. **Test it on a small fake feature table**, e.g. a few hundred rows of random numbers with
+   those column prefixes and a random 0/1 label. Make sure the C grid loop runs and the
+   function returns a model and val log losses. Score everything with
+   `src.evaluation.metrics.evaluate()` so all models are compared the same way.
+3. **Swap in the real files** once `data/processed/*_features.parquet` exists. Nothing else
+   should need to change.
+
+Rules for training: tune on **val** only, and score **test** once, at the very end, in
+`experiments/run_main.py`.
 
 ## Rules
 

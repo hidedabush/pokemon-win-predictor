@@ -1,0 +1,151 @@
+PREDICTING WHO WINS A POKEMON BATTLE
+COSC 4368 Final Project - Project overview
+Alexander Mayer, Andy Nguyen, Nguyen Hang, Ruel Cabading
+==========================================================================
+
+In one sentence: before a competitive Pokémon battle starts, both players see
+each other's six Pokémon. We train a model that looks at only those two teams
+and estimates the chance that each side wins.
+
+
+1. MOTIVATION
+--------------------------------------------------------------------------
+
+The problem
+  In Pokémon Showdown's most popular format (Gen 9 OverUsed, or "OU"), each
+  player brings a team of six Pokémon. At "team preview", just before the
+  first turn, both teams are revealed. Players often feel some matchups are
+  won or lost right there. We test that with data: how much does the team
+  alone tell you about who will win?
+
+Why it matters
+  - It separates team building from playing skill and luck. A battle is
+    decided by the teams, the players' decisions and random events (critical
+    hits, misses). How well the teams alone predict the winner shows how much
+    team building matters.
+  - It is a real, large and noisy problem. Over a million recent battles,
+    partly random outcomes, and inputs that are sets of Pokémon rather than
+    numbers make it a good test of the methods from class.
+  - Probabilities are more useful than yes/no. "Team A wins 62% of the time"
+    says more than "Team A wins", so we judge the probabilities, not just
+    accuracy.
+
+Who would benefit
+  - Players: see which teams and matchups are strong or weak before they
+    enter a game.
+  - Commentators and tournament viewers: pre-match win odds, like in sports
+    broadcasts.
+  - Students and researchers: a complete machine learning project on real
+    data, from raw logs to evaluated models.
+
+
+2. PROBLEM DEFINITION
+--------------------------------------------------------------------------
+
+The task
+  This is binary classification: given one battle, predict the probability
+  that player 1 wins.
+
+  Input           Player 1's six Pokémon and player 2's six Pokémon, as seen
+                  at team preview
+                  e.g. Great Tusk, Kingambit, Gholdengo, ... vs. Garganacl,
+                       Raging Bolt, Iron Moth, ...
+  Optional input  Both players' ladder ratings (a skill score)
+                  e.g. 1512 vs. 1498
+  Output          P(player 1 wins), a probability from 0 to 1
+                  e.g. 0.58
+  Label           Who actually won the battle
+                  e.g. 1 (player 1 won)
+
+  We train two versions: "teams only", which answers the main question, and
+  "teams + ratings", which shows how much knowing the players' skill adds.
+
+Dataset
+  - Battles: the public Hugging Face dataset
+    HolidayOugi/pokemon-showdown-replays, which holds about 34 million Pokémon
+    Showdown replays (73 GB). It contains 2.5 million Gen 9 OU battles. We
+    keep the 1,190,747 battles played from June 2025 to October 2026.
+  - What we keep from each replay: only the log lines with the two players
+    and their ratings, the twelve Pokémon at team preview, and the winner
+    (6 GB shrinks to 169 MB).
+  - Data quality: 99.0% of battles list exactly six Pokémon per side, 100%
+    record a winner, and 96.9% have a rating for both players. Battles
+    failing any check are dropped.
+  - Filtering: to focus on serious games, we keep battles where both players
+    are rated at least 1300 and their ratings are within 100 points of each
+    other, then use about 100,000 of them.
+  - Pokémon facts: each Pokémon's types and base stats, and the type chart
+    (which types are strong against which), come from Pokémon Showdown's own
+    data via the poke-env library.
+  - Train / validation / test split by time: the oldest 70% for training, the
+    next 15% for tuning (validation), the newest 15% for the final test. Like
+    in real use, we predict future battles from past ones, so the model can't
+    "peek" at the future.
+
+
+3. METHODOLOGY
+--------------------------------------------------------------------------
+
+Approach
+  We use supervised learning on hand-built features. A team is a set of six
+  Pokémon, so we first turn each battle into a row of numbers that describe
+  the two teams, and then train standard classifiers on those rows. We chose
+  this over a large neural network because the features are easy to explain,
+  the models train in minutes, and the results map directly to concepts from
+  class.
+
+Features: describing a matchup with numbers
+  Most features are written as "team A minus team B", so a positive number
+  means player 1 has more of it.
+
+  Stats      Total and average base stats of each team (HP, Attack, Defense,
+             Sp. Atk, Sp. Def, Speed)
+  Types      How many Pokémon of each of the 18 types each team has
+  Matchups   How many of the opponent's Pokémon each team can hit
+             super-effectively
+  Species    Which exact Pokémon are on each team (+1 for team A, -1 for
+             team B)
+  Ratings    Player 1's rating minus player 2's rating (only in the
+             "teams + ratings" version)
+
+  Swap trick: in the training data we add every battle a second time with the
+  two teams swapped and the label flipped. This way the model can't learn
+  "player 1 usually wins" and has to learn from the teams.
+
+Models, and why we chose them
+  - Simple baselines: coin flip, "higher total stats wins", "more type
+    advantages wins" and "higher rating wins". A real model has to beat these
+    to be worth anything.
+  - Logistic regression: our main model. It outputs a probability directly,
+    each feature gets a weight we can read and explain, and L2 regularization
+    stops it from overfitting to rare Pokémon.
+  - Random forest and gradient boosting: tree models can pick up
+    combinations, such as two Pokémon that are strong together, which
+    logistic regression can't. They also let us discuss the bias-variance
+    trade-off.
+  - Small neural network (optional): only if time allows, to check whether a
+    more flexible model finds anything extra.
+
+Pipeline
+  1. Download: fetch only the Gen 9 OU battles and keep only the lines we
+     need.
+  2. Parse: turn each log into one clean row: two teams, two ratings and the
+     winner.
+  3. Split: sort by date and cut into train, validation and test.
+  4. Build features: turn each pair of teams into the numbers above.
+  5. Train and tune: fit each model on train and pick its settings (such as
+     regularization strength or tree depth) on validation.
+  6. Evaluate once on test: compare all models and both input settings.
+
+How we measure success
+  - Accuracy: how often the predicted favorite actually wins.
+  - Log loss and Brier score: how good the probabilities are. A confident
+    wrong prediction is penalized much more than a cautious one.
+  - Calibration plot: when the model says 60%, does that side win about 60%
+    of the time?
+  - Ablation: remove one feature group at a time to see which kind of
+    information helps most.
+
+  We expect the teams alone to give a real but modest edge over a coin flip,
+  because player skill and luck also matter a lot. Measuring the size of that
+  edge is itself one of our results.
