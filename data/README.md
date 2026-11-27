@@ -52,8 +52,8 @@ slims it, deletes it, and stops once `max_rows` is reached.
 Rows are dropped if: either team isn't exactly 6 Pokémon, there's no `|win|` line (tie/forfeit
 issues), or the ratings fail the filter in `config.yaml`.
 
-Species IDs must match the keys of the Pokédex Andy loads (use the same `to_id()` helper in
-`src/utils.py` everywhere). Watch out for forms at team preview, e.g. `Urshifu-*`, `Ogerpon-*`.
+Species IDs must match the keys of the Pokédex loaded in `src/features/pokedex.py` (use the
+same `to_id()` helper in `src/utils.py` everywhere). Watch out for forms at team preview, e.g. `Urshifu-*`, `Ogerpon-*`.
 
 `data/sample/battles_sample.csv` is a tiny **fake** file in this format so features and
 models can be built before the real data is ready. Replace it with real rows once parsing works.

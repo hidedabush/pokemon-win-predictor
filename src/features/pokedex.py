@@ -1,4 +1,4 @@
-"""Load Gen 9 Pokédex (types, base stats) and the type chart.        Owner: Andy
+"""Load Gen 9 Pokédex (types, base stats) and the type chart.        Owner: Alexander
 
 Source: Pokémon Showdown data, easiest through poke-env's built-in Gen 9 data.
 Cite both in report/references.bib.

@@ -22,10 +22,10 @@ data/interim/battles.parquet      (shared format: see data/README.md)
    │  src/data/split.py           ← Alexander
    ▼
 data/interim/{train,val,test}.parquet
-   │  src/features/build_features.py  ← Andy
+   │  src/features/build_features.py  ← Alexander
    ▼
 data/processed/{train,val,test}_features.parquet
-   │  src/models/*  +  experiments/*  ← Nguyen Hang, Ruel
+   │  src/models/*  +  experiments/*  ← Andy, Nguyen Hang, Ruel
    ▼
 results/*.csv  +  figures/*.png  →  report/
 ```
@@ -34,11 +34,16 @@ results/*.csv  +  figures/*.png  →  report/
 
 | Person | Code | Report sections |
 |---|---|---|
-| Alexander | `src/data/` | Data |
-| Andy | `src/features/` | Methods (features), Background |
-| Nguyen Hang | `src/models/baselines.py`, `src/models/logistic.py`, `experiments/run_main.py` | Methods (models), Experiments (main table) |
+| Alexander | `src/data/`, `src/features/` | Data |
+| Andy | `src/models/baselines.py`, `experiments/run_baselines.py` | Background, Methods (features), Experiments (wrong predictions) |
+| Nguyen Hang | `src/models/logistic.py`, `experiments/run_main.py` | Methods (models), Experiments (main table) |
 | Ruel | `src/models/trees.py`, `src/evaluation/`, `experiments/run_ablation.py`, `src/simulation/` | Experiments (figures, ablation) |
 | Everyone | | Abstract, Introduction, Conclusion |
+
+**Updated 11/27:** Alexander is building features now (`src/features/`, in progress) so the
+model steps aren't blocked. Please don't start on it. To keep the load even, Andy takes the
+baselines (from Nguyen Hang) and the wrong-predictions examples (from Ruel) and still writes
+Background and Methods (features).
 
 Write what you did in `CONTRIBUTIONS.md` as you go. It becomes the page-1 footnote.
 
@@ -57,7 +62,7 @@ pip install -r requirements.txt
 | 1. Download | `src/data/download.py` | ✅ Done: 1,190,747 battles (Jun 2025 – Oct 2026) |
 | 2. Parse logs | `src/data/parse_logs.py` | ✅ Done: 533,490 clean battles → 100,000 sampled (`data/interim/battles.parquet`) |
 | 3. Split | `src/data/split.py` | ✅ Done: 70k / 15k / 15k by time (train to 2026-04-08, test from 2026-07-01) |
-| 4. Features | `src/features/pokedex.py`, `build_features.py` | ⬜ To do |
+| 4. Features | `src/features/pokedex.py`, `build_features.py` | 🟡 In progress (Alexander) |
 | 5. Baselines + logistic regression | `src/models/baselines.py`, `logistic.py`, `experiments/run_baselines.py`, `run_main.py` | ⬜ To do |
 | 6. Trees, figures, ablation | `src/models/trees.py`, `src/evaluation/plots.py`, `experiments/run_ablation.py` | ⬜ To do |
 
