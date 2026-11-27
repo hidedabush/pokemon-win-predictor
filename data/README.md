@@ -115,16 +115,17 @@ val/test still cover the most recent months.
 
 | split | battles | first | last | p1 win rate |
 |---|---:|---|---|---:|
-| train | 70,000 | 2025-06-01 | 2026-04-08 | 49.6% |
-| val | 15,000 | 2026-04-08 | 2026-06-30 | 50.7% |
-| test | 15,000 | 2026-06-30 | 2026-10-05 | 49.8% |
+| train | 70,000 | 2025-06-01 | 2026-04-08 | 49.8% |
+| val | 15,000 | 2026-04-08 | 2026-07-01 | 49.9% |
+| test | 15,000 | 2026-07-01 | 2026-10-05 | 49.7% |
 
 Dates are UTC. The splits don't overlap in time (sorted by `upload_time`; a split can end on the
-same day the next one starts). All win rates are within 1 point of 50%.
+same day, or even second, the next one starts; `battle_id` breaks ties). All win rates are
+within 1 point of 50%.
 
 ### Species IDs with a form in the final data (for the Pokédex keys)
 
-Every distinct ID in `battles.parquet` whose original name contained `-` (113 IDs; the full
+Every distinct ID in `battles.parquet` whose original name contained `-` (105 IDs; the full
 `id -> original name` map is `form_species` in `data_stats.json`). **Not yet checked against
 poke-env's Pokédex**; Andy, please check these first:
 
@@ -139,20 +140,20 @@ poke-env's Pokédex**; Andy, please check these first:
   `mausholdfour`, `meowsticf`, `moltresgalar`, `mukalola`, `ninetalesalola`,
   `ogerponcornerstone`, `ogerponwellspring`, `oinkolognef`, `oricoriopau`, `oricoriopompom`,
   `oricoriosensu`, `persianalola`, `pikachualola`, `pikachukalos`, `pikachuoriginal`,
-  `pikachupartner`, `pikachusinnoh`, `pikachuunova`, `pikachuworld`, `porygonz`,
+  `pikachusinnoh`, `pikachuworld`, `porygonz`,
   `qwilfishhisui`, `raichualola`, `rotomfan`, `rotomfrost`, `rotomheat`, `rotommow`,
   `rotomwash`, `samurotthisui`, `sandshrewalola`, `sandslashalola`, `sliggoohisui`,
   `slowbrogalar`, `slowkinggalar`, `sneaselhisui`, `squawkabillyblue`, `squawkabillywhite`,
-  `squawkabillyyellow`, `taurospaldeaaqua`, `taurospaldeablaze`, `taurospaldeacombat`,
+  `taurospaldeaaqua`, `taurospaldeablaze`, `taurospaldeacombat`,
   `thundurustherian`, `tinglu`, `tornadustherian`, `toxtricitylowkey`, `typhlosionhisui`,
-  `weezinggalar`, `wochien`, `wooperpaldea`, `zapdosgalar`, `zarudedada`, `zoroarkhisui`,
+  `weezinggalar`, `wochien`, `zapdosgalar`, `zarudedada`, `zoroarkhisui`,
   `zoruahisui`
 - **Cosmetic forms** (same stats/types as the base species; Showdown may list them only as
   cosmetic forms, not as their own keys, so a lookup can miss; fall back to the base species):
   `alcremiecaramelswirl`, `alcremielemoncream`, `alcremiematchacream`, `alcremiemintcream`,
   `alcremierainbowswirl`, `alcremierubycream`, `alcremierubyswirl`, `alcremiesaltedcream`,
-  `flabebeblue`, `florgesblue`, `florgesorange`, `florgeswhite`, `florgesyellow`,
+  `florgesblue`, `florgesorange`, `florgeswhite`, `florgesyellow`,
   `gastrodoneast`, `miniorblue`, `miniorgreen`, `miniorindigo`, `miniororange`,
   `miniorviolet`, `minioryellow`, `polteageistantique`, `sawsbuckautumn`, `sawsbucksummer`,
   `sawsbuckwinter`, `sinistchamasterpiece`, `tatsugiridroopy`, `tatsugiristretchy`,
-  `vivillonfancy`, `vivillonmarine`, `vivillonmodern`, `vivillonpokeball`, `vivillonriver`
+  `vivillonfancy`, `vivillonpokeball`
