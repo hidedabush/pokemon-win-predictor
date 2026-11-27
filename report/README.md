@@ -5,6 +5,8 @@
 - All four authors under the title; page-1 footnote with each person's role and % (see
   `CONTRIBUTIONS.md`).
 - Figures come from `figures/`, tables from `results/`.
+- Section drafts live in `report/sections/` (`data.tex` so far). Its figures and filter table
+  are rebuilt with `python -m src.data.figures`.
 - Citations go in `references.bib`. Double-check every entry before submitting.
 
 ## Sections
