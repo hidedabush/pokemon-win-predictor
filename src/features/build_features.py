@@ -1,4 +1,4 @@
-"""Turn each battle into a feature row.        Owner: Alexander
+"""Turn each battle into a feature row.
 
 Input:  data/interim/{train,val,test}.parquet
 Output: data/processed/{train,val,test}_features.parquet   (+ label column "p1_win")

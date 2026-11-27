@@ -1,4 +1,4 @@
-"""OPTIONAL: how much of the result is luck?        Owner: Ruel (if time)
+"""OPTIONAL: how much of the result is luck?
 
 Plan: with poke-env + a local Showdown server, give a slightly smarter bot (pick the
 highest-damage move) two fixed teams and play the same matchup ~100 times. The spread of

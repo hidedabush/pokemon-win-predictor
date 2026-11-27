@@ -1,4 +1,4 @@
-"""Metrics used everywhere.        Owner: Ruel
+"""Metrics used everywhere.
 
 Every model/baseline is scored with the same function so the results table is consistent.
 """

@@ -1,4 +1,4 @@
-"""Simple baselines. Each returns P(p1 wins) for every row.        Owner: Andy
+"""Simple baselines. Each returns P(p1 wins) for every row.
 
     coin_flip       always 0.5
     higher_bst      pick the team with higher total base stats

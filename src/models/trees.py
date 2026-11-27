@@ -1,4 +1,4 @@
-"""Tree models: random forest and gradient boosting.        Owner: Ruel
+"""Tree models: random forest and gradient boosting.
 
 Course link: one deep tree = low bias / high variance; a forest averages many trees to lower
 variance. Tune max_depth on the validation set.

@@ -58,7 +58,7 @@ same `to_id()` helper in `src/utils.py` everywhere). Watch out for forms at team
 `data/sample/battles_sample.csv` is a tiny **fake** file in this format so features and
 models can be built before the real data is ready. Replace it with real rows once parsing works.
 
-## Things to check first (Alexander)
+## Things to check first
 
 Checked on all 1,190,747 logs in `data/raw/gen9ou_slim.parquet` (run 11/27). The same numbers
 are written to `data/interim/data_stats.json` (not committed) for the report's Data section.

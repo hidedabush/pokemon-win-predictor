@@ -1,4 +1,4 @@
-"""Ablation study.        Owner: Ruel
+"""Ablation study.
 
 Using the best model setting from run_main.py, retrain with one feature group removed at a
 time (stats, types, match, species) and report the change in val/test accuracy and log loss.
