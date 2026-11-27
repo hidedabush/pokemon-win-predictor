@@ -6,6 +6,7 @@ Add a line whenever you finish something. This becomes the required page-1 footn
 | Date | Who | What |
 |---|---|---|
 | 11/23 | | Repo skeleton set up |
+| 11/27 | Alexander | Log parsing + time-based split |
 
 ## Draft footnote (fill in at the end)
 
