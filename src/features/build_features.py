@@ -50,8 +50,14 @@ learned win rate.
 
 Species missing from the Pokédex are left out of the stats/types/match groups and listed when
 you run this.
+
+Up to date check: build() writes features_meta.json next to the feature files with the settings
+it used. load_features() (default folder) refuses files built with other settings than the
+current config.yaml or an older FEATURES_VERSION, and says to rebuild. Bump FEATURES_VERSION
+whenever a code change alters the feature files, and log it in CHANGELOG.md.
 """
 
+import json
 from collections import Counter
 from itertools import combinations, product
 from pathlib import Path
@@ -68,6 +74,9 @@ SPLITS = ["train", "val", "test"]
 LABEL = "p1_win"
 MATCH_COLS = ["match_cover", "match_pairs", "match_checks", "match_effect", "match_outspeed"]
 LEARNED_COLS = ["learned_species", "learned_pairs", "learned_typical"]
+FEATURES_VERSION = 2  # bump when a code change alters the feature files; log it in CHANGELOG.md
+META_FILE = "features_meta.json"
+REBUILD = "python -m src.features.build_features"
 
 
 def feature_columns(columns, drop_groups=()) -> list[str]:
@@ -80,6 +89,21 @@ def feature_columns(columns, drop_groups=()) -> list[str]:
     return [c for c in columns if c.split("_", 1)[0] in keep]
 
 
+def feature_settings(cfg: dict) -> dict:
+    """Everything besides the input splits that decides the feature files."""
+    return {"version": FEATURES_VERSION, "seed": cfg["seed"], "features": cfg["features"]}
+
+
+def check_features_current(processed_dir, cfg: dict) -> None:
+    """Raise if the files in processed_dir were built with other settings than cfg."""
+    meta = Path(processed_dir) / META_FILE
+    built = json.loads(meta.read_text()) if meta.exists() else None
+    if built != feature_settings(cfg):
+        raise RuntimeError(
+            f"The features in {processed_dir} are out of date: they were built with other "
+            f"settings than config.yaml (see CHANGELOG.md). Rebuild them with: {REBUILD}")
+
+
 def load_features(split: str, drop_groups=(), processed_dir=None):
     """(X, y) for one split, ready for a model. Use this instead of reading the parquet by hand.
 
@@ -89,9 +113,14 @@ def load_features(split: str, drop_groups=(), processed_dir=None):
     X has only feature columns (no battle_id / swapped / p1_win). Both X and y are indexed by
     battle_id, so test predictions can be saved with X.index. Train has each battle_id twice
     when swap augmentation is on.
+
+    With the default folder it first checks that the files match config.yaml (see the module
+    docstring); a processed_dir you pass yourself is not checked.
     """
     if processed_dir is None:
-        processed_dir = ROOT / load_config()["data"]["processed_dir"]
+        cfg = load_config()
+        processed_dir = ROOT / cfg["data"]["processed_dir"]
+        check_features_current(processed_dir, cfg)
     df = pd.read_parquet(Path(processed_dir) / f"{split}_features.parquet")
     df = df.set_index("battle_id")
     return df[feature_columns(df.columns, drop_groups)], df[LABEL]
@@ -372,6 +401,7 @@ def build(cfg: dict) -> None:
         out = processed / f"{name}_features.parquet"
         feats.to_parquet(out, index=False)
         print(f"{name}: {len(feats):,} rows -> {out}")
+    (processed / META_FILE).write_text(json.dumps(feature_settings(cfg), indent=2) + "\n")
 
     cols = feature_columns(feats.columns)
     counts = Counter(c.split("_", 1)[0] for c in cols)
