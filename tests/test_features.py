@@ -4,11 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.features.build_features import (FEATURE_GROUPS, LABEL, SpeciesTable, as_team,
-                                         build_features, feature_columns, fit_species_vocab,
+from src.features.build_features import (FEATURE_GROUPS, LABEL, LearnedScores, SpeciesTable,
+                                         as_team, build_features, feature_columns,
+                                         fit_species_vocab, out_of_fold_scores,
                                          species_features, swap_augment)
 from src.features.pokedex import (TYPES, effectiveness_vs, load_pokedex, load_type_chart,
-                                  missing_species)
+                                  missing_species, multiplier)
 from src.utils import ROOT, load_config
 
 STATS = ["hp", "atk", "def", "spa", "spd", "spe"]
@@ -38,9 +39,19 @@ def sample():
 
 
 def test_pokedex_entry(dex):
-    assert dex["greattusk"] == {"types": ["ground", "fighting"], "hp": 115, "atk": 131,
-                                "def": 131, "spa": 53, "spd": 53, "spe": 87}
+    assert dex["greattusk"] == {"types": ["ground", "fighting"], "abilities": ["protosynthesis"],
+                                "hp": 115, "atk": 131, "def": 131, "spa": 53, "spd": 53,
+                                "spe": 87}
     assert dex["ogerponwellspring"]["types"] == ["grass", "water"]
+
+
+def test_ability_immunity_only_when_sure(dex, chart):
+    assert multiplier("ground", dex["rotomwash"], chart) == 0       # Levitate is its only ability
+    assert multiplier("electric", dex["rotomwash"], chart) == 1
+    # Heatran may have Flash Fire OR Flame Body, so no sure Fire immunity: Fire stays neutral
+    # (0.5x on Fire, 2x on Steel); Ground is 4x
+    assert multiplier("fire", dex["heatran"], chart) == 1
+    assert multiplier("ground", dex["heatran"], chart) == 4
 
 
 def test_type_chart_is_attacker_first(chart):
@@ -75,6 +86,14 @@ A = ["greattusk", "kingambit", "gholdengo", "dragonite", "ironvaliant", "corvikn
 B = ["garganacl", "ragingbolt", "samurotthisui", "ironmoth", "landorustherian", "gholdengo"]
 
 
+def teams(df):
+    return [as_team(t) for t in df.p1_team], [as_team(t) for t in df.p2_team]
+
+
+def learned_on(df):
+    return LearnedScores().fit(*teams(df), df[LABEL].to_numpy())
+
+
 def battles(rows):
     return pd.DataFrame([{"battle_id": f"b{i}", "upload_time": i, "p1_team": a, "p2_team": b,
                           "p1_rating": ra, "p2_rating": rb, "p1_win": y}
@@ -89,6 +108,13 @@ def test_stat_features_are_mean_difference(table, dex):
     bst = lambda team: np.mean([sum(dex[x][s] for s in STATS) for x in team])  # noqa: E731
     assert f["stats_bst"] == pytest.approx(bst(A) - bst(B), abs=1e-3)
     assert f["rating_diff"] == 50
+
+
+def test_stat_max_and_min(table, dex):
+    f = build_features(battles([(A, B, 1500, 1500, 1)]), table, vocab=[]).iloc[0]
+    for s in STATS:
+        assert f[f"stats_max_{s}"] == max(dex[x][s] for x in A) - max(dex[x][s] for x in B)
+        assert f[f"stats_min_{s}"] == min(dex[x][s] for x in A) - min(dex[x][s] for x in B)
 
 
 def test_type_counts(table):
@@ -110,6 +136,68 @@ def test_matchup_by_hand(table):
     f = build_features(battles([(["garchomp"], ["corviknight"], 1500, 1500, 1)]),
                        table, vocab=[]).iloc[0]
     assert f["match_cover"] == 0 and f["match_pairs"] == 0
+
+
+def test_matchup_checks_effect_and_speed(table):
+    # Garchomp (spe 102) vs Heatran (spe 77). Garchomp's best STAB on Heatran is Ground 4x
+    # (log2 = 2); Heatran's best on Garchomp is 1x (log2 = 0). Neither resists all of the other's
+    # types (Heatran is 2x weak to Ground; Garchomp takes Fire and Steel neutral).
+    f = build_features(battles([(["garchomp"], ["heatran"], 1500, 1500, 1)]),
+                       table, vocab=[]).iloc[0]
+    assert f["match_effect"] == 2 and f["match_outspeed"] == 1 and f["match_checks"] == 0
+    # Heatran (Fire/Steel) resists both Flying (0.5x) and Steel (0.25x), so it checks
+    # Corviknight; Corviknight takes Fire 2x, so it doesn't check Heatran. Heatran's best STAB
+    # is Fire 2x (log2 = 1); Corviknight's best is Flying 0.5x (log2 = -1). Speed 77 vs 67.
+    f = build_features(battles([(["heatran"], ["corviknight"], 1500, 1500, 1)]),
+                       table, vocab=[]).iloc[0]
+    assert f["match_checks"] == 1 and f["match_effect"] == 2 and f["match_outspeed"] == 1
+    # Levitate counts: Tusk's Ground does 0x to Rotom-Wash, so Tusk's best is Fighting 1x
+    # (log2 = 0); Rotom's Water hits Tusk 2x (log2 = 1)
+    f = build_features(battles([(["rotomwash"], ["greattusk"], 1500, 1500, 1)]),
+                       table, vocab=[]).iloc[0]
+    assert f["match_effect"] == 1
+
+
+def test_type_holes_and_stacked(table):
+    # Great Tusk (Ground/Fighting) resists Poison, Bug, Rock, Dark and is immune to Electric: 13
+    f = build_features(battles([(["greattusk"], ["rotomwash"], 1500, 1500, 1)]),
+                       table, vocab=[]).iloc[0]
+    tusk = 18 - 5
+    # Rotom-Wash resists Fire, Water, Ice, Steel, Flying and is immune to Ground (Levitate): 12
+    rotom = 18 - 6
+    assert f["types_holes"] == tusk - rotom
+    # Tusk is weak to Water, Grass, Ice, Psychic, Flying, Fairy (1 each); Rotom to Grass only
+    assert f["types_stacked"] == 1 - 1
+    two_weak = build_features(battles([(["garchomp", "landorustherian"], ["greattusk"],
+                                        1500, 1500, 1)]), table, vocab=[]).iloc[0]
+    assert two_weak["types_stacked"] == 2 - 1      # both weak to Ice (4x)
+
+
+def test_learned_scores_by_hand():
+    # x beat y twice; with prior 2 the smoothed rate of x is (2 + 1) / (2 + 2) = 0.75
+    s = LearnedScores(prior=2).fit([["x"], ["x"]], [["y"], ["y"]], np.array([1, 1]))
+    sa, pairs, typical = s.transform([["x"]], [["y"]])[0]
+    assert sa == pytest.approx(0.25 - (-0.25)) and pairs == pytest.approx(0.25)
+    # reversed order gives the exact negative
+    assert s.transform([["y"]], [["x"]])[0] == pytest.approx([-sa, -pairs, -typical])
+    # unseen species sit at 50% -> 0
+    assert s.transform([["new"]], [["other"]])[0].tolist() == [0, 0, 0]
+
+
+def test_learned_typical_counts_teammates():
+    s = LearnedScores().fit([["a", "b"], ["a", "b"]], [["c", "d"], ["c", "e"]], np.array([1, 0]))
+    # (a, b) seen together twice, (c, e) once
+    assert s.transform([["a", "b"]], [["c", "e"]])[0][2] == pytest.approx(np.log1p(2) - np.log1p(1))
+
+
+def test_out_of_fold_never_uses_own_battle():
+    # Every battle is a different, unique pair of species: out of fold, nothing was ever seen,
+    # so every score is exactly 0. A plain fit on all battles would leak the label.
+    teams_a = [[f"a{i}"] for i in range(10)]
+    teams_b = [[f"b{i}"] for i in range(10)]
+    y = np.array([1] * 10)
+    assert np.all(out_of_fold_scores(teams_a, teams_b, y, folds=5, prior=1, seed=0) == 0)
+    assert np.all(LearnedScores(1).fit(teams_a, teams_b, y).transform(teams_a, teams_b)[:, 0] > 0)
 
 
 def test_species_vocab_from_train_only_and_min_count():
@@ -137,14 +225,17 @@ def test_swapping_teams_negates_every_feature(table, sample):
                               [as_team(t) for t in sample.p2_team])
     swapped_input = sample.rename(columns={"p1_team": "p2_team", "p2_team": "p1_team",
                                            "p1_rating": "p2_rating", "p2_rating": "p1_rating"})
-    f = build_features(sample, table, vocab)
-    g = build_features(swapped_input, table, vocab)
+    learned = learned_on(sample)
+    f = build_features(sample, table, vocab, learned.transform(*teams(sample)))
+    g = build_features(swapped_input, table, vocab, learned.transform(*teams(swapped_input)))
+    assert set(FEATURE_GROUPS) <= {c.split("_", 1)[0] for c in f.columns}
     cols = feature_columns(f.columns)
     np.testing.assert_allclose(g[cols].to_numpy(float), -f[cols].to_numpy(float))
 
 
 def test_swap_augment(table, sample):
-    f = build_features(sample, table, vocab=[])
+    learned = learned_on(sample).transform(*teams(sample))
+    f = build_features(sample, table, vocab=[], learned=learned)
     aug = swap_augment(f)
     n = len(f)
     assert len(aug) == 2 * n
@@ -156,9 +247,9 @@ def test_swap_augment(table, sample):
 
 
 def test_output_columns_on_sample(table, sample):
-    vocab = fit_species_vocab([as_team(t) for t in sample.p1_team],
-                              [as_team(t) for t in sample.p2_team])
-    f = build_features(sample, table, vocab)
+    vocab = fit_species_vocab(*teams(sample))
+    oof = out_of_fold_scores(*teams(sample), sample[LABEL].to_numpy(), folds=5, prior=20, seed=0)
+    f = build_features(sample, table, vocab, oof)
     assert f.columns[:2].tolist() == ["battle_id", "swapped"] and f.columns[-1] == LABEL
     groups = {c.split("_", 1)[0] for c in feature_columns(f.columns)}
     assert groups == set(FEATURE_GROUPS)
@@ -170,3 +261,4 @@ def test_config_has_feature_settings():
     fcfg = load_config()["features"]
     assert fcfg["stat_names"] == STATS
     assert fcfg["species_min_count"] >= 1
+    assert fcfg["learned_folds"] >= 2 and fcfg["learned_prior"] > 0

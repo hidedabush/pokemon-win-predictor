@@ -107,8 +107,8 @@ real data. You don't have to wait, though:
 
 1. **Write the model code against the shared formats now.** `src/models/logistic.py` gets
    `X_train, y_train, X_val, y_val`: a feature table plus the `p1_win` label. Column names
-   start with their group (`stats_`, `types_`, `match_`, `species_`, `rating_`), and every
-   feature is p1 − p2. Pick columns with `feature_columns(df.columns)` from
+   start with their group (`stats_`, `types_`, `match_`, `species_`, `learned_`, `rating_`),
+   and every feature is p1 − p2 (what each one means is at the top of `build_features.py`). Pick columns with `feature_columns(df.columns)` from
    `src/features/build_features.py`; "teams only" is
    `feature_columns(df.columns, drop_groups=["rating"])`. The files also hold `battle_id`,
    `swapped` (1 = swap-augmented copy, train only) and `p1_win`, which aren't features.

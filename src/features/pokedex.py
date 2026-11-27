@@ -3,9 +3,11 @@
 Source: Pokémon Showdown's data files, read through poke-env's bundled Gen 9 data (no network
 needed). Cite both in report/references.bib.
 
-    dex = load_pokedex()          {"greattusk": {"types": ["ground", "fighting"], "hp": 115, ...}}
+    dex = load_pokedex()          {"greattusk": {"types": ["ground", "fighting"],
+                                                 "abilities": ["protosynthesis"], "hp": 115, ...}}
     chart = load_type_chart()     chart[attacking_type][defending_type] -> 0, 0.5, 1 or 2
     effectiveness_vs("ground", ["fire", "flying"], chart) -> 0.0
+    multiplier("ground", dex["rotomwash"], chart) -> 0.0   (types AND abilities, e.g. Levitate)
 
 Watch out: poke-env stores its chart the other way round (defending type first, upper case),
 so load_type_chart() flips it. tests/test_features.py checks the direction.
@@ -24,6 +26,18 @@ TYPES = [
 ]
 STATS = ["hp", "atk", "def", "spa", "spd", "spe"]
 
+# Abilities that make a Pokémon immune to one attacking type. Team preview doesn't show which
+# ability a Pokémon has, so multiplier() only uses one when EVERY ability the species can have
+# gives the immunity (Rotom-Wash: Levitate only). That misses e.g. Heatran's usual Flash Fire,
+# but never invents an immunity.
+IMMUNITY_ABILITIES = {
+    "levitate": "ground", "eartheater": "ground",
+    "waterabsorb": "water", "stormdrain": "water", "dryskin": "water",
+    "voltabsorb": "electric", "lightningrod": "electric", "motordrive": "electric",
+    "flashfire": "fire", "wellbakedbody": "fire",
+    "sapsipper": "grass",
+}
+
 
 @lru_cache(maxsize=1)
 def _gen9():
@@ -33,7 +47,8 @@ def _gen9():
 
 
 def load_pokedex() -> dict:
-    """{species_id: {"types": [1-2 lowercase types], "hp": .., "atk": .., ..., "spe": ..}}.
+    """{species_id: {"types": [1-2 lowercase types], "abilities": [ability IDs],
+                     "hp": .., "atk": .., ..., "spe": ..}}.
 
     Keys go through to_id() so they match the battle data (they already do in poke-env).
     """
@@ -41,6 +56,7 @@ def load_pokedex() -> dict:
     for key, entry in _gen9().pokedex.items():
         stats = entry["baseStats"]
         dex[to_id(key)] = {"types": [t.lower() for t in entry["types"]],
+                           "abilities": [to_id(a) for a in entry["abilities"].values()],
                            **{s: stats[s] for s in STATS}}
     return dex
 
@@ -58,6 +74,19 @@ def effectiveness_vs(attack_type: str, defender_types: list[str], chart: dict) -
     for t in defender_types:
         result *= chart[attack_type][t]
     return result
+
+
+def ability_immunity(entry: dict) -> str | None:
+    """The type this species is surely immune to through its ability, if any."""
+    types = {IMMUNITY_ABILITIES.get(a) for a in entry["abilities"]}
+    return types.pop() if len(types) == 1 and None not in types else None
+
+
+def multiplier(attack_type: str, entry: dict, chart: dict) -> float:
+    """Damage multiplier of one attacking type against a Pokédex entry (types + abilities)."""
+    if attack_type == ability_immunity(entry):
+        return 0.0
+    return effectiveness_vs(attack_type, entry["types"], chart)
 
 
 def missing_species(species_ids, dex: dict) -> list[str]:

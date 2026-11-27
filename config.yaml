@@ -26,6 +26,8 @@ features:
   use_species_onehot: true     # +1 on team A, -1 on team B
   species_min_count: 20        # species in fewer TRAIN battles than this get no column
   swap_augment: true           # add each battle again with teams swapped and label flipped
+  learned_folds: 5             # train rows get learned_* scores fitted without their own fold
+  learned_prior: 20            # smooth learned win rates toward 50% with this many fake battles
 
 models:
   logistic:
