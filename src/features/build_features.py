@@ -231,7 +231,7 @@ class LearnedScores:
     smoothed toward 50% with `prior` imaginary battles, so a pair seen twice stays near 50%.
     """
 
-    def __init__(self, prior: float = 20):
+    def __init__(self, prior: float = 100):
         self.prior = prior
 
     def fit(self, teams_a, teams_b, y) -> "LearnedScores":
@@ -356,7 +356,7 @@ def build(cfg: dict) -> None:
     if fcfg["use_species_onehot"]:
         vocab = fit_species_vocab(train_a, train_b, fcfg.get("species_min_count", 1))
 
-    prior, folds = fcfg.get("learned_prior", 20), fcfg.get("learned_folds", 5)
+    prior, folds = fcfg.get("learned_prior", 100), fcfg.get("learned_folds", 5)
     full_fit = LearnedScores(prior).fit(train_a, train_b, train_y)
 
     for name, df in splits.items():
