@@ -11,7 +11,7 @@ Add a line whenever you finish something. This becomes the required page-1 footn
 ## Draft footnote (fill in at the end)
 
 > Author contributions: All authors took part in discussion and planning.
-> A. Mayer: data collection and log parsing, Data section (25%).
-> A. Nguyen: feature engineering, Methods and Background sections (25%).
-> N. Hang: baselines and logistic regression, main experiments (25%).
+> A. Mayer: data collection, log parsing and feature engineering, Data section (25%).
+> A. Nguyen: baselines, error analysis, Background and Methods (features) sections (25%).
+> N. Hang: logistic regression, main experiments, Methods (models) section (25%).
 > R. Cabading: tree models, evaluation figures and ablation study (25%).

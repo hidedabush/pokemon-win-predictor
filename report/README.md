@@ -17,7 +17,8 @@
 | Methods: features | Andy |
 | Methods: models | Nguyen Hang |
 | Experiments: main results table | Nguyen Hang |
-| Experiments: figures, ablation, wrong predictions | Ruel |
+| Experiments: figures, ablation | Ruel |
+| Experiments: wrong predictions | Andy |
 
 ## Methods: tie every choice to class
 
