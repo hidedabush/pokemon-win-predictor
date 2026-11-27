@@ -55,8 +55,8 @@ pip install -r requirements.txt
 | Step | Script | Status |
 |---|---|---|
 | 1. Download | `src/data/download.py` | ✅ Done: 1,190,747 battles (Jun 2025 – Oct 2026) |
-| 2. Parse logs | `src/data/parse_logs.py` | ⬜ To do (next, unblocks everyone) |
-| 3. Split | `src/data/split.py` | ⬜ To do |
+| 2. Parse logs | `src/data/parse_logs.py` | ✅ Done: 533,490 clean battles → 100,000 sampled (`data/interim/battles.parquet`) |
+| 3. Split | `src/data/split.py` | ✅ Done: 70k / 15k / 15k by time (train to 2026-04-08, test from 2026-07-01) |
 | 4. Features | `src/features/pokedex.py`, `build_features.py` | ⬜ To do |
 | 5. Baselines + logistic regression | `src/models/baselines.py`, `logistic.py`, `experiments/run_baselines.py`, `run_main.py` | ⬜ To do |
 | 6. Trees, figures, ablation | `src/models/trees.py`, `src/evaluation/plots.py`, `experiments/run_ablation.py` | ⬜ To do |
