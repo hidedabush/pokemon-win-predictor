@@ -3,13 +3,16 @@
 Everything is written to a temp folder, so this runs without the real dataset.
 """
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from src.data.parse_logs import build_battles
 from src.data.split import split
-from src.features.build_features import (LABEL, LEARNED_COLS, LearnedScores, SpeciesTable, build,
+from src.features.build_features import (LABEL, LEARNED_COLS, META_FILE, LearnedScores,
+                                         SpeciesTable, build, check_features_current,
                                          feature_columns, load_features, out_of_fold_scores)
 from src.features.pokedex import load_aliases, load_pokedex, load_type_chart
 from tests.fake_data import random_battles, tmp_config, write_raw
@@ -122,3 +125,20 @@ def test_load_features_on_pipeline_output(run):
     assert not {"swapped", LABEL, "battle_id"} & set(X.columns)
     X_teams, _ = load_features("val", drop_groups=["rating"], processed_dir=processed)
     assert list(X_teams.columns) == [c for c in X.columns if c != "rating_diff"]
+
+
+def test_stale_features_are_caught(run):
+    # The settings saved by build() match the config it used; any change or a missing file fails.
+    cfg, processed = run["cfg"], run["cfg"]["data"]["processed_dir"]
+    check_features_current(processed, cfg)
+    other = {**cfg, "features": {**cfg["features"], "learned_prior": 7}}
+    with pytest.raises(RuntimeError, match="out of date"):
+        check_features_current(processed, other)
+    meta = Path(processed) / META_FILE
+    saved = meta.read_text()
+    meta.unlink()
+    try:
+        with pytest.raises(RuntimeError, match="out of date"):
+            check_features_current(processed, cfg)
+    finally:
+        meta.write_text(saved)

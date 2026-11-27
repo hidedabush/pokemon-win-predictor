@@ -91,6 +91,9 @@ python -m src.data.split                # -> data/interim/{train,val,test}.parqu
 python -m src.features.build_features   # -> data/processed/{train,val,test}_features.parquet
 ```
 
+Rebuild after pulling a change listed in [CHANGELOG.md](CHANGELOG.md). `load_features()` stops
+with an "out of date" error if your feature files don't match `config.yaml`.
+
 **4. Train and evaluate.**
 
 ```bash

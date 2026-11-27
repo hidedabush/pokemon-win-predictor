@@ -27,11 +27,11 @@ features:
   species_min_count: 20        # species in fewer TRAIN battles than this get no column
   swap_augment: true           # add each battle again with teams swapped and label flipped
   learned_folds: 5             # train rows get learned_* scores fitted without their own fold
-  learned_prior: 20            # smooth learned win rates toward 50% with this many fake battles
+  learned_prior: 100           # smooth learned win rates toward 50% with this many fake battles
 
 models:
   logistic:
-    C_grid: [0.001, 0.01, 0.1, 1.0, 10.0]   # inverse L2 strength, tuned on val
+    C_grid: [0.0001, 0.0003, 0.001, 0.01, 0.1, 1.0, 10.0]   # inverse L2 strength, tuned on val
   random_forest:
     n_estimators: 300
     max_depth_grid: [5, 10, 20, null]

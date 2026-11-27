@@ -11,6 +11,7 @@ Add a line whenever you finish something. This becomes the required page-1 footn
 | 11/27 | Alexander | More features: stat max/min, type holes, ability immunities, checks/speed matchups, out-of-fold learned win rates; cosmetic-form merging; `load_features()` loader |
 | 11/27 | Alexander | Data checks + tests: parse/split/features end to end on fake data, checks on the real files; `to_id` accent fix |
 | 11/27 | Alexander | Data section draft (`report/sections/data.tex`), data figures and filter table (`src/data/figures.py`) |
+| 11/27 | Alexander | Feature check on val: `learned_prior` 20 → 100, wider logistic C grid; stale-feature check in `load_features()`, `CHANGELOG.md` |
 
 ## Draft footnote (fill in at the end)
 

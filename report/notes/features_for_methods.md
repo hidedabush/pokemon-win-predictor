@@ -40,9 +40,11 @@ ability the species can have gives that immunity.
   `learned_*` values from a 5-fold fit that leaves their own fold out (out-of-fold, like
   cross-validation). Val and test use the fit on all of train. *(Target leakage;
   cross-validation.)*
-- **Smoothing toward 50%.** Win rates are pulled toward 50% as if every species or pair had 20
+- **Smoothing toward 50%.** Win rates are pulled toward 50% as if every species or pair had 100
   extra battles split evenly, so a pair seen twice doesn't get a 100% win rate.
-  *(Regularization / a prior; bias–variance.)*
+  We tried 5, 20 and 100 with a quick logistic regression on validation; 100 was slightly
+  best and 5 worst, though the differences are small. *(Regularization / a prior;
+  bias–variance.)*
 - **Cosmetic forms merged.** Forms that play the same (Alcremie's flavours, for example) share
   one species, so they don't split each other's data.
 - **New species.** A species that first shows up after the training period has no column of its
@@ -53,7 +55,7 @@ ability the species can have gives that immunity.
 
 - 450 feature columns: 19 stats, 20 types, 5 match, 402 species, 3 learned, 1 rating.
 - 140,000 training rows (70,000 battles, each twice), 15,000 val rows, 15,000 test rows.
-- Settings live in `config.yaml` under `features:` (min count 20, prior 20, 5 folds).
+- Settings live in `config.yaml` under `features:` (min count 20, prior 100, 5 folds).
 
 ## Checked by tests
 
