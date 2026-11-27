@@ -1,6 +1,7 @@
 """Shared helpers. Everyone imports from here so names and settings stay consistent."""
 
 import re
+import unicodedata
 from pathlib import Path
 
 import yaml
@@ -18,6 +19,7 @@ def to_id(name: str) -> str:
     """Showdown-style ID: lowercase, letters and digits only.
 
     'Great Tusk' -> 'greattusk', 'Urshifu-Rapid-Strike' -> 'urshifurapidstrike'
+    Accents are dropped first, so 'Flabébé' -> 'flabebe' (the Pokédex key), not 'flabb'.
     Use this for every species name so the battle data and the Pokédex match.
     """
-    return re.sub(r"[^a-z0-9]", "", name.lower())
+    return re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKD", name).lower())
