@@ -7,6 +7,8 @@
 - Figures come from `figures/`, tables from `results/`.
 - Section drafts live in `report/sections/` (`data.tex` so far). Its figures and filter table
   are rebuilt with `python -m src.data.figures`.
+- `report/notes/`: `features_for_methods.md` (what each feature is and why, for Methods) and
+  `data_slides.md` (data slides and speaker notes for the presentation).
 - Citations go in `references.bib`. Double-check every entry before submitting.
 
 ## Sections

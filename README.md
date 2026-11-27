@@ -34,7 +34,7 @@ results/*.csv  +  figures/*.png  →  report/
 
 | Person | Code | Report sections |
 |---|---|---|
-| Alexander | `src/data/`, `src/features/` (in progress) | Data |
+| Alexander | `src/data/`, `src/features/` | Data |
 | Andy | `src/models/baselines.py`, `experiments/run_baselines.py` | Background, Methods (features), Experiments (wrong predictions) |
 | Nguyen Hang | `src/models/logistic.py`, `experiments/run_main.py` | Methods (models), Experiments (main table) |
 | Ruel | `src/models/trees.py`, `src/evaluation/`, `experiments/run_ablation.py`, `src/simulation/` | Experiments (figures, ablation) |
