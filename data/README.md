@@ -60,9 +60,99 @@ models can be built before the real data is ready. Replace it with real rows onc
 
 ## Things to check first (Alexander)
 
-On 5–10 real Gen 9 OU logs, confirm:
-1. `|poke|p1|...` and `|poke|p2|...` lines exist (team preview).
-2. Each player's rating can be found (usually in `|player|p1|name|avatar|rating`).
-3. Every battle has a `|win|<name>` line.
+Checked on all 1,190,747 logs in `data/raw/gen9ou_slim.parquet` (run 11/27). The same numbers
+are written to `data/interim/data_stats.json` (not committed) for the report's Data section.
 
-Write what you find here.
+### What the real logs look like
+
+```
+|player|p1|Raijin Zerachu|volkner|1506      side | name | avatar | rating
+|player|p2|Swankentora|n|1460
+|poke|p1|Kilowattrel, M|                     species, gender (only the species is kept)
+|poke|p2|Samurott-Hisui, F|                  -> samurotthisui
+|win|Swankentora
+|player|p1|                                  player left the room
+```
+
+- **`|player|` lines:** ~75% of battles have 2 per side (the real one + an empty one when the
+  player leaves); some have dozens (reconnects). The **first** line per side holds the name and
+  rating; 59 battles have a later line with a different spelling of the name, so later lines
+  are ignored. 4 battles have no name on a side's first line (dropped).
+- **Ratings:** taken from the `|player|` line, not the dataset's `rating` column. That column is
+  one number per battle; it tracks the players' ratings (correlation 0.996) but is usually
+  ~25 below their average (e.g. 1483 vs. 1506/1460, 1237 vs. 1278/1261), and one number can't
+  give a rating gap. Tournament (`smogtours-`), `radicalred-`, `rom-` and unrated battles have
+  an empty rating field.
+- **Winner:** every `|win|` name matches one of the two players except 2 battles (a third name,
+  e.g. a guest), and 247 battles have no `|win|` line (ties). No battle has two players with the
+  same name.
+- **Forms:** species are written with their form (`Ogerpon-Wellspring`, `Landorus-Therian`).
+  Forms hidden at team preview are written with `-*`: `Zamazenta-*`, `Greninja-*`,
+  `Dudunsparce-*` (and `Urshifu-*`, `Zacian-*`, `Silvally-*`, `Gourgeist-*`, which appear only
+  in unrated battles and are all dropped). `to_id` turns `-*` into the base ID (`zamazenta`).
+- **Species not legal in OU** (Megas, Arceus, Calyrex-Ice/Shadow, Kyurem-Black/White, `-Sevii`
+  forms; 132 battles) come from unrated or `radicalred-` battles and none pass the rating filter.
+
+### Drop counts (`python -m src.data.parse_logs`)
+
+Applied in this order; `min_rating` 1300 and `max_rating_gap` 100 from `config.yaml`.
+
+| step | battles | dropped |
+|---|---:|---:|
+| total rows | 1,190,747 | |
+| parsed OK (both players named) | 1,190,743 | 4 |
+| exactly 6 Pokémon per side | 1,179,001 | 11,742 |
+| has a winner | 1,178,752 | 249 |
+| both ratings present | 1,147,643 | 31,109 |
+| both ≥ 1300 | 580,386 | 567,257 |
+| \|gap\| ≤ 100 | 533,490 | 46,896 |
+| random sample (seed 42) | **100,000** | |
+
+The sample is drawn uniformly from the whole date range, so every month is represented and
+val/test still cover the most recent months.
+
+### Time-based split (`python -m src.data.split`)
+
+| split | battles | first | last | p1 win rate |
+|---|---:|---|---|---:|
+| train | 70,000 | 2025-06-01 | 2026-04-08 | 49.6% |
+| val | 15,000 | 2026-04-08 | 2026-06-30 | 50.7% |
+| test | 15,000 | 2026-06-30 | 2026-10-05 | 49.8% |
+
+Dates are UTC. The splits don't overlap in time (sorted by `upload_time`; a split can end on the
+same day the next one starts). All win rates are within 1 point of 50%.
+
+### Species IDs with a form in the final data (for the Pokédex keys)
+
+Every distinct ID in `battles.parquet` whose original name contained `-` (113 IDs; the full
+`id -> original name` map is `form_species` in `data_stats.json`). **Not yet checked against
+poke-env's Pokédex**; Andy, please check these first:
+
+- **Hidden form, mapped to the base species:** `zamazenta` (Zamazenta-\*), `greninja`
+  (Greninja-\*), `dudunsparce` (Dudunsparce-\*).
+- **Battle forms / regional forms** (different types or stats; should be Pokédex keys):
+  `arcaninehisui`, `articunogalar`, `avalugghisui`, `basculegionf`, `basculinbluestriped`,
+  `basculinwhitestriped`, `braviaryhisui`, `decidueyehisui`, `deoxysdefense`, `deoxysspeed`,
+  `dugtrioalola`, `electrodehisui`, `enamorustherian`, `exeggutoralola`, `geodudealola`,
+  `golemalola`, `goodrahisui`, `graveleralola`, `hoopaunbound`, `indeedeef`, `keldeoresolute`,
+  `kommoo`, `landorustherian`, `lilliganthisui`, `lycanrocdusk`, `lycanrocmidnight`,
+  `mausholdfour`, `meowsticf`, `moltresgalar`, `mukalola`, `ninetalesalola`,
+  `ogerponcornerstone`, `ogerponwellspring`, `oinkolognef`, `oricoriopau`, `oricoriopompom`,
+  `oricoriosensu`, `persianalola`, `pikachualola`, `pikachukalos`, `pikachuoriginal`,
+  `pikachupartner`, `pikachusinnoh`, `pikachuunova`, `pikachuworld`, `porygonz`,
+  `qwilfishhisui`, `raichualola`, `rotomfan`, `rotomfrost`, `rotomheat`, `rotommow`,
+  `rotomwash`, `samurotthisui`, `sandshrewalola`, `sandslashalola`, `sliggoohisui`,
+  `slowbrogalar`, `slowkinggalar`, `sneaselhisui`, `squawkabillyblue`, `squawkabillywhite`,
+  `squawkabillyyellow`, `taurospaldeaaqua`, `taurospaldeablaze`, `taurospaldeacombat`,
+  `thundurustherian`, `tinglu`, `tornadustherian`, `toxtricitylowkey`, `typhlosionhisui`,
+  `weezinggalar`, `wochien`, `wooperpaldea`, `zapdosgalar`, `zarudedada`, `zoroarkhisui`,
+  `zoruahisui`
+- **Cosmetic forms** (same stats/types as the base species; Showdown may list them only as
+  cosmetic forms, not as their own keys, so a lookup can miss; fall back to the base species):
+  `alcremiecaramelswirl`, `alcremielemoncream`, `alcremiematchacream`, `alcremiemintcream`,
+  `alcremierainbowswirl`, `alcremierubycream`, `alcremierubyswirl`, `alcremiesaltedcream`,
+  `flabebeblue`, `florgesblue`, `florgesorange`, `florgeswhite`, `florgesyellow`,
+  `gastrodoneast`, `miniorblue`, `miniorgreen`, `miniorindigo`, `miniororange`,
+  `miniorviolet`, `minioryellow`, `polteageistantique`, `sawsbuckautumn`, `sawsbucksummer`,
+  `sawsbuckwinter`, `sinistchamasterpiece`, `tatsugiridroopy`, `tatsugiristretchy`,
+  `vivillonfancy`, `vivillonmarine`, `vivillonmodern`, `vivillonpokeball`, `vivillonriver`
