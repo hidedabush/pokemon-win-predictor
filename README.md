@@ -57,7 +57,7 @@ pip install -r requirements.txt
 | 1. Download | `src/data/download.py` | ✅ Done: 1,190,747 battles (Jun 2025 – Oct 2026) |
 | 2. Parse logs | `src/data/parse_logs.py` | ✅ Done: 533,490 clean battles → 100,000 sampled (`data/interim/battles.parquet`) |
 | 3. Split | `src/data/split.py` | ✅ Done: 70k / 15k / 15k by time (train to 2026-04-08, test from 2026-07-01) |
-| 4. Features | `src/features/pokedex.py`, `build_features.py` | 🟡 In progress |
+| 4. Features | `src/features/pokedex.py`, `build_features.py` | 🟡 Code done and tested; real-data run pending |
 | 5. Baselines + logistic regression | `src/models/baselines.py`, `logistic.py`, `experiments/run_baselines.py`, `run_main.py` | ⬜ To do |
 | 6. Trees, figures, ablation | `src/models/trees.py`, `src/evaluation/plots.py`, `experiments/run_ablation.py` | ⬜ To do |
 
@@ -107,8 +107,11 @@ real data. You don't have to wait, though:
 
 1. **Write the model code against the shared formats now.** `src/models/logistic.py` gets
    `X_train, y_train, X_val, y_val`: a feature table plus the `p1_win` label. Column names
-   start with their group (`stats_`, `types_`, `match_`, `species_`, `rating_`), so
-   "teams only" just means dropping the `rating_*` columns.
+   start with their group (`stats_`, `types_`, `match_`, `species_`, `rating_`), and every
+   feature is p1 − p2. Pick columns with `feature_columns(df.columns)` from
+   `src/features/build_features.py`; "teams only" is
+   `feature_columns(df.columns, drop_groups=["rating"])`. The files also hold `battle_id`,
+   `swapped` (1 = swap-augmented copy, train only) and `p1_win`, which aren't features.
 2. **Test it on a small fake feature table**, e.g. a few hundred rows of random numbers with
    those column prefixes and a random 0/1 label. Make sure the C grid loop runs and the
    function returns a model and val log losses. Score everything with

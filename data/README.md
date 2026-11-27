@@ -126,8 +126,9 @@ within 1 point of 50%.
 ### Species IDs with a form in the final data (for the Pokédex keys)
 
 Every distinct ID in `battles.parquet` whose original name contained `-` (105 IDs; the full
-`id -> original name` map is `form_species` in `data_stats.json`). **Not yet checked against
-poke-env's Pokédex**; Andy, please check these first:
+`id -> original name` map is `form_species` in `data_stats.json`). **All 105 are keys in
+poke-env's Gen 9 Pokédex** (checked 11/27); `python -m src.features.pokedex` re-checks every
+species in `battles.parquet`.
 
 - **Hidden form, mapped to the base species:** `zamazenta` (Zamazenta-\*), `greninja`
   (Greninja-\*), `dudunsparce` (Dudunsparce-\*).
