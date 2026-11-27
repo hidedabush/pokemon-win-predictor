@@ -190,7 +190,9 @@ def build_battles(cfg: dict, limit: int | None = None) -> pd.DataFrame:
     for r in drops:
         print(f"{r['step']:<30}{r['battles']:>12,}{r['dropped']:>10,}")
 
-    df = pd.DataFrame(rows)
+    # Sort first: the raw file's row order can differ between downloads, and the sample below
+    # must be the same for everyone who runs this with the same seed.
+    df = pd.DataFrame(rows).sort_values(["upload_time", "battle_id"]).reset_index(drop=True)
     n = min(d["sample_size"], len(df))
     # Sample uniformly over the whole date range (not the newest n), so after the time split
     # val/test still cover the most recent months and train the oldest.
