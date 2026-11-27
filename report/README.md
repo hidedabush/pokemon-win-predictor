@@ -15,7 +15,7 @@
 
 Abstract · Introduction · Background · Data · Methods (features, models) · Experiments (main
 results table, figures, ablation, wrong predictions) · Conclusion. Who writes which is in the
-Responsibilities table in the main [README](../README.md).
+"Who does what" table in the main [README](../README.md).
 
 ## Methods: tie every choice to class
 
