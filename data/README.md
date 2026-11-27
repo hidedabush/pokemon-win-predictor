@@ -55,8 +55,9 @@ issues), or the ratings fail the filter in `config.yaml`.
 Species IDs must match the keys of the Pokédex loaded in `src/features/pokedex.py` (use the
 same `to_id()` helper in `src/utils.py` everywhere). Watch out for forms at team preview, e.g. `Urshifu-*`, `Ogerpon-*`.
 
-`data/sample/battles_sample.csv` is a tiny **fake** file in this format so features and
-models can be built before the real data is ready. Replace it with real rows once parsing works.
+`data/sample/battles_sample.csv` is a tiny **fake** file in this format, used by the tests and
+for trying code without the real data. Keep it fake: real rows come from the unlicensed replay
+dataset, so they must never be committed.
 
 ## Things to check first
 
@@ -149,8 +150,9 @@ species in `battles.parquet`.
   `thundurustherian`, `tinglu`, `tornadustherian`, `toxtricitylowkey`, `typhlosionhisui`,
   `weezinggalar`, `wochien`, `zapdosgalar`, `zarudedada`, `zoroarkhisui`,
   `zoruahisui`
-- **Cosmetic forms** (same stats/types as the base species; Showdown may list them only as
-  cosmetic forms, not as their own keys, so a lookup can miss; fall back to the base species):
+- **Cosmetic forms** (same types, base stats and abilities as the base species). They are kept
+  as-is in `battles.parquet`; `build_features` merges them into the base species
+  (`pokedex.load_aliases()`) so e.g. all Alcremie flavours share one species column:
   `alcremiecaramelswirl`, `alcremielemoncream`, `alcremiematchacream`, `alcremiemintcream`,
   `alcremierainbowswirl`, `alcremierubycream`, `alcremierubyswirl`, `alcremiesaltedcream`,
   `florgesblue`, `florgesorange`, `florgeswhite`, `florgesyellow`,
@@ -158,3 +160,28 @@ species in `battles.parquet`.
   `miniorviolet`, `minioryellow`, `polteageistantique`, `sawsbuckautumn`, `sawsbucksummer`,
   `sawsbuckwinter`, `sinistchamasterpiece`, `tatsugiridroopy`, `tatsugiristretchy`,
   `vivillonfancy`, `vivillonpokeball`
+
+### Features on the real data (`python -m src.features.build_features`, run 11/27)
+
+599 distinct species, all in the Pokédex. 450 feature columns: stats 19, types 20, match 5,
+species 402 (seen in ≥ 20 train battles), learned 3, rating 1. Train has 140,000 rows
+(70,000 battles + their swapped copies); val and test 15,000 each. No missing values and no
+constant columns.
+
+How well each feature predicts the winner on its own (ROC AUC on val; 0.5 = no signal):
+`learned_pairs` 0.547, `rating_diff` 0.532, `learned_species` 0.531, `match_effect` 0.525,
+`match_checks` 0.522; every other feature is between 0.485 and 0.518. The learned scores
+score no better on train (out-of-fold: 0.539, 0.522) than on val, so no label leaks in.
+
+A quick, untuned logistic regression (standardised, C = 0.01) gets on val:
+
+| features | accuracy | log loss | AUC |
+|---|---:|---:|---:|
+| teams only | 53.6% | 0.6905 | 0.553 |
+| teams + rating | 54.1% | 0.6893 | 0.558 |
+| teams only, without learned_* | 53.4% | 0.6905 | 0.547 |
+| learned_* only | 53.3% | 0.6903 | 0.545 |
+
+So team preview alone carries a small but real signal. Expect results in the mid-50s; much
+higher on val/test would point to a leak. `rating_diff` is weak partly because the rating
+filter keeps only battles with |gap| ≤ 100.

@@ -44,17 +44,22 @@ Swap augmentation (config features.swap_augment): TRAIN only. Every battle is ad
 the teams swapped (features negated) and the label flipped, so the model can't learn
 "player 1 wins more".
 
+Cosmetic forms (Alcremie flavours, Florges colours, ...) are merged into their base species
+before anything is computed (pokedex.load_aliases), so they share one species column and one
+learned win rate.
+
 Species missing from the Pokédex are left out of the stats/types/match groups and listed when
 you run this.
 """
 
 from collections import Counter
 from itertools import combinations, product
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from src.features.pokedex import (STATS, TYPES, load_pokedex, load_type_chart,
+from src.features.pokedex import (STATS, TYPES, load_aliases, load_pokedex, load_type_chart,
                                   missing_species, multiplier)
 from src.utils import ROOT, load_config
 
@@ -75,6 +80,23 @@ def feature_columns(columns, drop_groups=()) -> list[str]:
     return [c for c in columns if c.split("_", 1)[0] in keep]
 
 
+def load_features(split: str, drop_groups=(), processed_dir=None):
+    """(X, y) for one split, ready for a model. Use this instead of reading the parquet by hand.
+
+        X_train, y_train = load_features("train")                        all features
+        X_val, y_val = load_features("val", drop_groups=["rating"])     teams only
+
+    X has only feature columns (no battle_id / swapped / p1_win). Both X and y are indexed by
+    battle_id, so test predictions can be saved with X.index. Train has each battle_id twice
+    when swap augmentation is on.
+    """
+    if processed_dir is None:
+        processed_dir = ROOT / load_config()["data"]["processed_dir"]
+    df = pd.read_parquet(Path(processed_dir) / f"{split}_features.parquet")
+    df = df.set_index("battle_id")
+    return df[feature_columns(df.columns, drop_groups)], df[LABEL]
+
+
 def as_team(team) -> list[str]:
     """Team from parquet (list/array of IDs) or from the sample CSV ("a|b|c|d|e|f")."""
     return team.split("|") if isinstance(team, str) else list(team)
@@ -86,10 +108,18 @@ def as_team(team) -> list[str]:
 class SpeciesTable:
     """Per-species and per-pair numbers looked up from the Pokédex once, then reused."""
 
-    def __init__(self, dex: dict, chart: dict, stat_names: list[str]):
+    def __init__(self, dex: dict, chart: dict, stat_names: list[str],
+                 aliases: dict[str, str] | None = None):
         self.dex, self.chart, self.stat_names = dex, chart, stat_names
+        self.aliases = aliases or {}
         self._defense: dict[str, np.ndarray] = {}
         self._best: dict[tuple[str, str], float] = {}
+
+    def teams(self, battles: pd.DataFrame) -> tuple[list[list[str]], list[list[str]]]:
+        """(p1 teams, p2 teams) as lists of species IDs, cosmetic forms merged into their
+        base species (see pokedex.load_aliases)."""
+        return tuple([[self.aliases.get(s, s) for s in as_team(t)] for t in battles[col]]
+                     for col in ("p1_team", "p2_team"))
 
     def stat_vector(self, s: str) -> np.ndarray:
         """Base stats in stat_names order, then the base stat total."""
@@ -265,8 +295,7 @@ def build_features(battles: pd.DataFrame, table: SpeciesTable, vocab: list[str],
     LearnedScores.transform or out_of_fold_scores; without it the learned_* columns are left
     out."""
     n = len(battles)
-    teams_a = [as_team(t) for t in battles["p1_team"]]
-    teams_b = [as_team(t) for t in battles["p2_team"]]
+    teams_a, teams_b = table.teams(battles)
 
     stats = np.array([team_stat_features(a, table) - team_stat_features(b, table)
                       for a, b in zip(teams_a, teams_b)]).reshape(n, -1)
@@ -313,15 +342,14 @@ def build(cfg: dict) -> None:
               for name in SPLITS}
 
     dex = load_pokedex()
-    table = SpeciesTable(dex, load_type_chart(), fcfg["stat_names"])
+    table = SpeciesTable(dex, load_type_chart(), fcfg["stat_names"], load_aliases(dex))
     seen = {s for df in splits.values() for col in ("p1_team", "p2_team")
             for team in df[col] for s in as_team(team)}
     missing = missing_species(seen, dex)
     print(f"{len(seen)} distinct species; {len(missing)} not in the Pokédex {missing or ''}")
 
     train = splits["train"]
-    train_a = [as_team(t) for t in train["p1_team"]]
-    train_b = [as_team(t) for t in train["p2_team"]]
+    train_a, train_b = table.teams(train)
     train_y = train[LABEL].to_numpy()
 
     vocab = []
@@ -337,8 +365,7 @@ def build(cfg: dict) -> None:
         if name == "train":
             learned = out_of_fold_scores(train_a, train_b, train_y, folds, prior, cfg["seed"])
         else:
-            learned = full_fit.transform([as_team(t) for t in df["p1_team"]],
-                                         [as_team(t) for t in df["p2_team"]])
+            learned = full_fit.transform(*table.teams(df))
         feats = build_features(df, table, vocab, learned)
         if name == "train" and fcfg["swap_augment"]:
             feats = swap_augment(feats)

@@ -89,6 +89,24 @@ def multiplier(attack_type: str, entry: dict, chart: dict) -> float:
     return effectiveness_vs(attack_type, entry["types"], chart)
 
 
+def load_aliases(dex: dict | None = None) -> dict[str, str]:
+    """{form_id: base_id} for forms that are the same as their base species in types, base
+    stats and abilities (Alcremie flavours, Florges colours, Minior cores, Vivillon patterns,
+    Maushold-Four...). build_features merges them so they share one species column and one
+    win rate. Forms that differ in anything (Rotom-Wash, Ogerpon masks, Toxtricity-Low-Key)
+    stay separate."""
+    dex = dex if dex is not None else load_pokedex()
+    same = lambda x, y: (set(x["types"]) == set(y["types"])  # noqa: E731
+                         and set(x["abilities"]) == set(y["abilities"])
+                         and all(x[s] == y[s] for s in STATS))
+    aliases = {}
+    for key, entry in _gen9().pokedex.items():
+        k, base = to_id(key), to_id(entry.get("baseSpecies", key))
+        if k != base and k in dex and base in dex and same(dex[k], dex[base]):
+            aliases[k] = base
+    return aliases
+
+
 def missing_species(species_ids, dex: dict) -> list[str]:
     """Species IDs that aren't Pokédex keys, sorted."""
     return sorted(set(species_ids) - set(dex))
