@@ -371,7 +371,7 @@ def build(cfg: dict) -> None:
             feats = swap_augment(feats)
         out = processed / f"{name}_features.parquet"
         feats.to_parquet(out, index=False)
-        print(f"{name}: {len(feats):,} rows -> {out.relative_to(ROOT)}")
+        print(f"{name}: {len(feats):,} rows -> {out}")
 
     cols = feature_columns(feats.columns)
     counts = Counter(c.split("_", 1)[0] for c in cols)

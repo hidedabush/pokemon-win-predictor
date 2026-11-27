@@ -9,6 +9,7 @@ Add a line whenever you finish something. This becomes the required page-1 footn
 | 11/27 | Alexander | Log parsing + time-based split |
 | 11/27 | Alexander | Pokédex/type chart loader + feature builder (stats, types, matchups, species, rating; swap augmentation) |
 | 11/27 | Alexander | More features: stat max/min, type holes, ability immunities, checks/speed matchups, out-of-fold learned win rates; cosmetic-form merging; `load_features()` loader |
+| 11/27 | Alexander | Data checks + tests: parse/split/features end to end on fake data, checks on the real files; `to_id` accent fix |
 
 ## Draft footnote (fill in at the end)
 

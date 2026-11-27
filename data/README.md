@@ -185,3 +185,20 @@ A quick, untuned logistic regression (standardised, C = 0.01) gets on val:
 So team preview alone carries a small but real signal. Expect results in the mid-50s; much
 higher on val/test would point to a leak. `rating_diff` is weak partly because the rating
 filter keeps only battles with |gap| ≤ 100.
+
+### Checking the files (run 11/27)
+
+`pytest tests/test_real_data.py` checks that the files on your machine fit together (filters
+held, splits cover every battle once and in time order, feature rows line up with the splits,
+swapped rows are exact negatives). It skips itself where the data isn't built. A full check on
+11/27 also found:
+
+- Parsing the raw logs again reproduces all 100,000 rows of `battles.parquet` exactly
+  (teams, ratings, winner, upload time). Rebuilding the val features from scratch matches
+  the saved file.
+- Some val/test battles have species never seen in train: 18 species in 7.7% of val battles,
+  13 in 2.0% of test battles (mostly joke picks like `clefairy`, `diglett`). 4.5% of val teams
+  and 1.3% of test teams have at least one species without a `species_` column; those still
+  get stats/types/match features, and a learned win rate of 50%.
+- `to_id` now drops accents (`Flabébé` → `flabebe`, the Pokédex key; before it gave `flabb`).
+  This only affected one clean battle, which isn't in the 100k sample, so no file changed.

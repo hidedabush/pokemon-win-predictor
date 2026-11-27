@@ -9,6 +9,9 @@ from src.utils import ROOT, load_config, to_id
 def test_to_id():
     assert to_id("Great Tusk") == "greattusk"
     assert to_id("Urshifu-Rapid-Strike") == "urshifurapidstrike"
+    assert to_id("Flabébé") == "flabebe"  # accents dropped, not the whole letter
+    assert to_id("Farfetch’d") == "farfetchd"
+    assert to_id("Type: Null") == "typenull"
 
 
 def test_config_loads():
