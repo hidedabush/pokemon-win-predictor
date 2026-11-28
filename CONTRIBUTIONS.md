@@ -12,6 +12,7 @@ Add a line whenever you finish something. This becomes the required page-1 footn
 | 11/27 | Alexander | Data checks + tests: parse/split/features end to end on fake data, checks on the real files; `to_id` accent fix |
 | 11/27 | Alexander | Data section draft (`report/sections/data.tex`), data figures and filter table (`src/data/figures.py`) |
 | 11/27 | Alexander | Feature check on val: `learned_prior` 20 → 100, wider logistic C grid; stale-feature check in `load_features()`, `CHANGELOG.md` |
+| 11/27 | Andy | Implemented four rule-based baselines, baseline evaluation, synthetic unit tests, and error-analysis functionality. Successfully evaluated baselines on 15,000 validation battles. Drafted Background and Methods (features) sections. |
 | 11/27 | Nguyen Hang | L2 logistic regression with C tuned on val, top coefficients (`src/models/logistic.py`); main experiment script (`experiments/run_main.py`); tests (`tests/test_models.py`) |
 
 ## Draft footnote (fill in at the end)

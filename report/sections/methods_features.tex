@@ -1,0 +1,35 @@
+\subsection{Feature engineering}
+We represent each battle using 450 numerical features derived from the teams at
+preview and, optionally, player ratings. Base statistics, types and the type
+chart come from Pok\'emon Showdown data through poke-env~\cite{showdown,pokeenv}.
+Features are expressed from player~1's perspective as differences between the
+teams. The label $y=1$ indicates that player~1 won.
+
+\paragraph{Feature groups.}
+The 19 stat features compare the team mean, maximum and minimum of each of the
+six base stats, plus mean base stat total. The 20 type features compare counts
+of the 18 types, uncovered defensive weaknesses and the largest number of
+members weak to any one type. Five matchup features compare super-effective
+coverage, the number of favorable attacking pairs, defensive switch-in options,
+mean log-type effectiveness and the number of pairs with higher base Speed.
+We consider attacks matching the species' own types, and ability immunities
+only when every possible ability grants the same immunity. The 402 species
+features encode presence on player~1's team as $+1$, on player~2's as $-1$ and
+on both or neither as zero. Cosmetic forms are merged, and only species
+observed in at least 20 training battles receive a column. Three learned features
+summarize historical species win rates, cross-team species-pair win rates and
+within-team species co-occurrence. The last feature is the difference between
+player ratings; it is excluded in the teams-only setting.
+
+\paragraph{Leakage and augmentation.}
+Learned win rates are estimated using five-fold out-of-fold calculations on
+training battles: each row receives estimates fitted without its own fold.
+Validation and test use estimates fitted on all training battles. To reduce
+variance for rare species and pairs, a rate with $w$ wins in $n$ observations
+is smoothed as $(w+50)/(n+100)$, corresponding to a prior centered at 50\%.
+Unseen species receive a neutral historical win-rate estimate and can still be
+represented by their known stats and types. We also augment training by
+negating every feature and flipping the label ($y\mapsto 1-y$), representing
+the same battle with players exchanged. This doubles 70{,}000 training battles
+to 140{,}000 rows, while validation and test remain unchanged. This symmetry
+balances training labels without introducing future information.
