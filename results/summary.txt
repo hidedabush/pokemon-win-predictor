@@ -1,0 +1,186 @@
+PREDICTING WHO WINS A POKEMON BATTLE: RESULTS SUMMARY
+COSC 4368 Final Project | final test run 2026-11-28
+==========================================================================
+
+Question: from the two six-Pokemon teams at team preview (Gen 9 OU), how well
+can we predict who wins?
+
+Data: 100,000 rated battles (both players >= 1300, within 100 points), split
+by time. Train: 70k battles (Jun 2025 - Apr 2026). Val: 15k (to Jul 2026).
+Test: 15k (to Oct 2026). Each battle has 450 features, all written as
+player 1 minus player 2.
+
+Every number below is on the TEST set, which was scored once. Brackets are
+95% bootstrap intervals (1,000 resamples of the test battles).
+Files: results/main_results.csv, results/baselines.csv.
+
+
+1. RESULTS
+--------------------------------------------------------------------------
+
+                        TEAMS ONLY                     TEAMS + RATINGS
+                        accuracy             log loss  accuracy             log loss
+  Logistic regression   53.6% [52.9, 54.5]   0.6892    54.3% [53.4, 55.0]   0.6881
+  Random forest         53.3% [52.5, 54.1]   0.6898    54.2% [53.4, 54.9]   0.6888
+  Gradient boosting     53.8% [53.0, 54.6]   0.6891    53.7% [52.8, 54.5]   0.6884
+
+  Baselines (test)      coin flip 49.7% (log loss 0.6931)
+                        higher base stats 51.9%    more type advantages 49.8%
+                        higher rating 51.9%
+
+  Chosen settings (tuned on val): logistic C = 0.001; random forest
+  max_depth = 20 (300 trees); gradient boosting max_depth 7 / 59 rounds
+  (teams only) and 5 / 172 rounds (teams + ratings).
+
+
+2. WHAT THE RESULTS SAY
+--------------------------------------------------------------------------
+
+a) The teams alone predict the winner, but only a little.
+   Every model beats a coin flip with room to spare: even the low end of
+   every interval is above 52.5%. The models also beat every simple rule
+   (best: 51.9%). But the edge is about 3.5-4 points over a coin flip.
+
+b) The three models are tied.
+   Each model was compared with logistic regression on the same resampled
+   battles (paired bootstrap). Every difference interval contains 0, so
+   this test set can't tell them apart. The simplest model, logistic
+   regression, does as well as the tree models. Averaging all three models'
+   probabilities doesn't help either (log loss -0.0003, interval
+   [-0.0008, +0.0002]).
+
+c) Knowing the ratings helps, a little, and the gain is real.
+   Paired check, same model with vs. without ratings:
+     logistic        +0.6 points accuracy [+0.1, +1.2]   log loss -0.0012 [-0.0017, -0.0006]
+     random forest   +0.8 points          [+0.2, +1.4]   log loss -0.0010 [-0.0014, -0.0005]
+     grad. boosting  -0.1 points          [-0.9, +0.5]   log loss -0.0008 [-0.0016, +0.0001]
+   This holds even though we only kept battles within 100 rating points,
+   so even small skill gaps matter.
+
+d) The model holds up on future battles.
+   Logistic: 53.8% on val vs. 53.6% on test (the newest battles). Little
+   is lost as the metagame shifts over time.
+
+e) The probabilities are honest (calibrated), and modest.
+   Sort the test battles into 10 groups by predicted P(p1 wins): the
+   predicted and actual win rates match closely (e.g. 0.42 predicted vs.
+   0.41 actual in the lowest group). The highest group is slightly
+   overconfident: 0.58 predicted vs. 0.56 actual.
+   The model rarely sounds confident, and it is right more often when it
+   does (logistic, teams only):
+     prediction within 47.5-52.5%:   42% of battles, right 51.7% of the time
+     52.5-55% either way:            31% of battles, right 53.5%
+     55-60% either way:              24% of battles, right 56.3%
+     more than 60/40:                 3% of battles, right 61.1%
+   Figure: figures/calibration_test.png.
+
+f) Which information matters (ablation on val, gradient boosting).
+   Removing type matchups (match_*) costs the most: +0.0024 log loss,
+   -0.4 points accuracy. Next come the rating (+0.0016) and learned win
+   rates (+0.0014), then types, base stats and species (+0.0008 to
+   +0.0010). Every single drop is under half a point of accuracy, inside
+   the noise. So no one feature group carries the model; the signal is spread
+   thinly across all of them.
+
+g) What the logistic weights show (results/logistic_top_coefficients.csv).
+   - Biggest weights: learned pair win rates (+), "typical team" score
+     (+), type-matchup effectiveness (+), and the number of Speed matchups
+     won (+).
+   - Overlapping features split credit and can flip sign:
+     learned_species (-) vs. learned_pairs (+), and stats_spe (-) vs.
+     match_outspeed (+). Read the group, not the sign of one weight.
+   - Interesting pattern: the most-used Pokemon (Gholdengo, Dragapult,
+     Iron Valiant, Gliscor, Hatterene) get NEGATIVE weights, and less
+     common picks (Slitherwing, Pawmot, Klefki, Muk-Alola, Excadrill) get
+     POSITIVE ones. One possible explanation (not tested): players who
+     bring niche picks to 1300+ ladder may be more experienced, while
+     "copied" meta teams are used by a wider range of players. That would
+     be a player effect hiding inside the team features.
+
+h) Some wrong predictions are probably not about teams at all.
+   Example from the error analysis (data/interim/error_analysis/, kept
+   private): a standard strong OU team (Raging Bolt, Ogerpon-Wellspring,
+   Iron Treads, ...) lost to Komala / Mesprit / Spiritomb / Tauros /
+   Zebstrika / Lapras. A result like that is more likely a disconnect,
+   early forfeit or joke game than a real team matchup, which points to
+   noise in the labels (see idea 1 below).
+
+
+3. WHY THE CEILING IS LOW
+--------------------------------------------------------------------------
+
+Team preview shows only the six species. It doesn't show moves, items,
+abilities, EVs or Tera types, and it doesn't show the players' decisions
+or luck (crits, misses, speed ties), which decide much of a battle. On top
+of that, the 1300+ ladder already filters out most clearly bad teams, so
+the teams we compare are fairly even. A modest edge is the expected
+result, and measuring how big it is (about 3.5-4 points) is itself the
+main finding.
+
+
+4. IDEAS TO IMPROVE (best expected payoff first)
+--------------------------------------------------------------------------
+
+IMPORTANT: the test set is now used up. Any change below must be tuned and
+judged on VAL only. Report it as follow-up work, or score it on a NEW test
+set: battles uploaded after 2026-10-05, which are not in our data yet.
+Never re-run the current test set to pick a winner.
+
+1. Clean the labels: drop forfeits and very short battles.  [likely biggest]
+   Battles that end in a few turns (disconnects, rage-quits, joke teams)
+   are noise; the teams didn't decide them. download.py only keeps the
+   |player|, |poke| and |win| lines. Also keeping the |turn| lines (or the
+   last turn number) would let parse_logs drop battles with fewer than
+   ~5 turns. Cheap to do, and it fixes the data rather than the model.
+
+2. Use all 533k clean battles instead of 100k.
+   The learning curve is still slowly rising: about -0.0006 val log loss
+   per doubling of training data. Estimate: +0.5 to 1 point of accuracy.
+   Cost: set sample_size: null, everyone rebuilds, and the trees get much
+   slower. Logistic regression would still train in minutes.
+
+3. Player history features (for the teams + ratings setting).
+   Rating alone is a crude skill measure, and point (g) hints that player
+   effects are hiding in the species weights. Add, using ONLY battles
+   before the current one: each player's number of past games, past win
+   rate, and how often they've used this exact team. Team preview doesn't
+   show this, but the ladder does, so it's fair for the "with player info"
+   model.
+
+4. Model the team as a whole.
+   Our features are mostly single Pokemon, pairs and counts. Real team
+   strength comes from combinations (weather: Pelipper + Swift Swim;
+   hazard setters + removal; cores like Gholdengo + Great Tusk). Options:
+   archetype flags (rain / sun / sand / hazard stack / hyper offense), or
+   a small neural net that embeds each Pokemon and pools the team
+   (a "Deep Sets" model; src/models/mlp.py is reserved for this).
+
+5. Follow the metagame over time.
+   Pokemon usage and counter-picks shift month to month. Weight recent
+   training battles more, or compute learned win rates over a rolling
+   window instead of all of train.
+
+6. Small extras.
+   - Turn the rating difference into Elo's expected score,
+     1 / (1 + 10^(-diff/400)), or add rating x team interactions.
+   - Calibrate the top of the range (e.g. Platt scaling on val), since the
+     most confident 10% is ~2 points overconfident.
+
+Not worth more time: more hyperparameter tuning (the val C curve is flat
+between 0.0003 and 0.01), switching or ensembling these models (they're
+tied, and averaging gave nothing), and removing feature groups (no group
+matters much on its own).
+
+
+5. FILES
+--------------------------------------------------------------------------
+  results/main_results.csv            final test table with intervals
+  results/baselines.csv               baselines on val and test
+  results/test_predictions.csv        every test prediction (battle_id, model,
+                                      setting, p_win, y)
+  results/logistic_c_curve.csv        val log loss vs. C
+  results/logistic_top_coefficients.csv
+  results/tree_tuning.csv, tree_group_importance.csv, ablation.csv,
+  learning_curve.csv                  Ruel's val-only experiments
+  figures/calibration_test.png, hyperparam_logistic.png,
+  feature_importance_logistic.png     made by the final run

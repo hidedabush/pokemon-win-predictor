@@ -1,0 +1,81 @@
+setting,feature,coef
+teams only,learned_pairs,0.14500517
+teams only,learned_typical,0.11596804
+teams only,match_effect,0.09606907
+teams only,species_slitherwing,0.071025714
+teams only,species_pawmot,0.066044964
+teams only,species_mukalola,0.06509357
+teams only,species_klefki,0.06154119
+teams only,species_excadrill,0.059217382
+teams only,species_regidrago,0.05690542
+teams only,match_outspeed,0.055851106
+teams only,species_milotic,0.054103773
+teams only,species_whimsicott,0.053916283
+teams only,species_empoleon,0.05344497
+teams only,species_gardevoir,0.052981798
+teams only,species_chesnaught,0.050608147
+teams only,species_ogerpon,0.046768527
+teams only,species_volcanion,0.04608544
+teams only,species_barraskewda,0.045959387
+teams only,species_frosmoth,0.043467425
+teams only,species_hawlucha,0.043321535
+teams only,species_primarina,-0.04121001
+teams only,species_chansey,-0.041507054
+teams only,species_skeledirge,-0.046229526
+teams only,species_pelipper,-0.046325725
+teams only,species_dragapult,-0.048936278
+teams only,species_gholdengo,-0.05074394
+teams only,species_araquanid,-0.05201395
+teams only,species_ironmoth,-0.053936064
+teams only,species_gallade,-0.05417516
+teams only,species_meowscarada,-0.05559688
+teams only,stats_spe,-0.05690278
+teams only,species_walkingwake,-0.057806972
+teams only,species_zapdos,-0.05947412
+teams only,species_overqwil,-0.062210232
+teams only,species_ironvaliant,-0.06384189
+teams only,types_flying,-0.06432373
+teams only,species_rotomwash,-0.07188591
+teams only,species_hatterene,-0.07335624
+teams only,species_gliscor,-0.09087933
+teams only,learned_species,-0.10073036
+teams + ratings,learned_pairs,0.14433907
+teams + ratings,learned_typical,0.107451074
+teams + ratings,match_effect,0.09619005
+teams + ratings,rating_diff,0.07167759
+teams + ratings,species_slitherwing,0.0706199
+teams + ratings,species_pawmot,0.06530003
+teams + ratings,species_mukalola,0.065286666
+teams + ratings,species_klefki,0.06018962
+teams + ratings,match_outspeed,0.05658114
+teams + ratings,species_excadrill,0.056557164
+teams + ratings,species_regidrago,0.056324013
+teams + ratings,species_milotic,0.055908583
+teams + ratings,species_whimsicott,0.055186905
+teams + ratings,species_empoleon,0.054449446
+teams + ratings,species_gardevoir,0.05326008
+teams + ratings,species_chesnaught,0.049487315
+teams + ratings,species_barraskewda,0.04747294
+teams + ratings,species_ogerpon,0.046795953
+teams + ratings,species_volcanion,0.04582051
+teams + ratings,species_frosmoth,0.042339686
+teams + ratings,species_chansey,-0.040853422
+teams + ratings,species_landorustherian,-0.041134976
+teams + ratings,species_skeledirge,-0.04714966
+teams + ratings,species_pelipper,-0.04823259
+teams + ratings,species_dragapult,-0.04914781
+teams + ratings,species_gholdengo,-0.05107959
+teams + ratings,species_araquanid,-0.05324367
+teams + ratings,species_ironmoth,-0.054392774
+teams + ratings,species_gallade,-0.0545997
+teams + ratings,species_meowscarada,-0.05504473
+teams + ratings,species_walkingwake,-0.0564635
+teams + ratings,stats_spe,-0.057638213
+teams + ratings,species_zapdos,-0.059784092
+teams + ratings,species_overqwil,-0.06343439
+teams + ratings,species_ironvaliant,-0.063702784
+teams + ratings,types_flying,-0.06547016
+teams + ratings,species_hatterene,-0.07315933
+teams + ratings,species_rotomwash,-0.07542306
+teams + ratings,species_gliscor,-0.09034807
+teams + ratings,learned_species,-0.10097246
