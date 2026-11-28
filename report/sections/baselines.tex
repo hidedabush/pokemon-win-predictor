@@ -1,0 +1,12 @@
+% Include in Methods (models) or Experiments, as agreed with the other authors.
+\paragraph{Baselines.}
+We compare the trained classifiers against four rules that require no model
+fitting. The coin-flip baseline predicts a win probability of 0.5 for every
+battle. The other baselines favor the team with greater mean base stat total,
+the team with greater super-effective coverage, or the player with higher
+ladder rating. For each rule, a positive feature difference gives player~1
+probability 0.6, a negative difference gives 0.4, and a tie gives 0.5. These
+non-extreme probabilities avoid excessive penalties for confident errors.
+The shared evaluation function classifies probabilities of at least 0.5 as a
+player~1 win and reports accuracy, log loss and Brier score. The rating baseline
+serves as a separate skill-based comparison, not as a teams-only predictor.
