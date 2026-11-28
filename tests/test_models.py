@@ -11,6 +11,7 @@ import pytest
 from experiments import run_main
 from src.data.parse_logs import build_battles
 from src.data.split import split
+from src.evaluation.metrics import bootstrap_ci, evaluate
 from src.features.build_features import build, load_features
 from src.models.logistic import make_logistic, top_coefficients, train_logistic
 from tests.fake_data import random_battles, tmp_config, write_raw
@@ -69,6 +70,32 @@ def test_swapping_teams_flips_the_probability():
     assert np.allclose(p + p_swap, 1.0)
 
 
+def test_bootstrap_ci():
+    rng = np.random.default_rng(0)
+    n = 4000
+    y = rng.integers(0, 2, n)
+    good = np.clip(np.where(y == 1, 0.65, 0.35) + rng.normal(0, 0.1, n), 0.01, 0.99)
+    coin = np.full(n, 0.5)
+    ci = bootstrap_ci(y, {"good": good, "coin": coin, "same": good.copy()}, reference="good",
+                      n_boot=500, seed=0)
+    for name, p in {"good": good, "coin": coin}.items():
+        m = evaluate(y, p)
+        for metric in ("accuracy", "log_loss", "brier"):
+            lo, hi = ci[name][metric]
+            assert lo <= m[metric] <= hi
+    # Accuracy interval width matches the textbook standard error (about 1.96 * sqrt(pq/n) per side).
+    lo, hi = ci["good"]["accuracy"]
+    acc = evaluate(y, good)["accuracy"]
+    assert abs((hi - lo) / 2 - 1.96 * np.sqrt(acc * (1 - acc) / n)) < 0.004
+    # Paired difference: point estimate equals the plain difference; a clearly worse model is caught,
+    # and a copy of the reference gives exactly zero.
+    d, dlo, dhi = ci["coin"]["diff_log_loss"]
+    assert np.isclose(d, evaluate(y, coin)["log_loss"] - evaluate(y, good)["log_loss"])
+    assert 0 < dlo <= d <= dhi
+    assert ci["same"]["diff_accuracy"] == (0.0, 0.0, 0.0)
+    assert "diff_accuracy" not in ci["good"]
+
+
 def test_mismatched_columns_raise():
     X_tr, y_tr = planted(100, 0)
     with pytest.raises(ValueError):
@@ -88,14 +115,35 @@ def fake_features(tmp_path_factory):
 
 def test_run_main_end_to_end_on_fake_features(fake_features, tmp_path):
     cfg, tmp = fake_features
-    processed = tmp / "processed_dir"
-    table = run_main.main(cfg=cfg, processed_dir=processed, results_dir=tmp_path)
+    cfg = {**cfg, "models": {**cfg["models"],  # small grids so the test is quick
+                             "random_forest": {"n_estimators": 20, "max_depth_grid": [3, None]},
+                             "gradient_boosting": {"learning_rate": 0.1, "max_depth_grid": [2],
+                                                   "max_iter": 20}}}
+    processed, figures = tmp / "processed_dir", tmp_path / "figures"
+    table = run_main.main(cfg=cfg, processed_dir=processed, results_dir=tmp_path,
+                          figures_dir=figures)
 
-    # logistic always runs; models that aren't written yet are skipped, not crashed on.
-    assert "logistic" in set(table["model"])
+    assert sorted(table["model"].unique()) == sorted(run_main.DEFAULT_MODELS)
     assert set(table["setting"]) == set(run_main.SETTINGS)
+    assert table.groupby("setting").size().eq(len(run_main.DEFAULT_MODELS)).all()
+    gb = table[table["model"] == "gradient_boosting"]["params"]
+    assert gb.str.contains("rounds=").all()  # tuned number of boosting rounds is recorded
+    for name in ("calibration_test", "hyperparam_logistic", "feature_importance_logistic"):
+        assert (figures / f"{name}.png").exists()
+
+    # Test is scored once: a second run refuses unless forced.
+    with pytest.raises(SystemExit):
+        run_main.main(cfg=cfg, processed_dir=processed, results_dir=tmp_path, figures_dir=figures)
     for col in ("accuracy", "log_loss", "brier", "val_log_loss"):
         assert table[col].between(0, 10).all()
+    for m in ("accuracy", "log_loss", "brier"):  # every number sits inside its own interval
+        assert (table[f"{m}_lo"] <= table[m]).all() and (table[m] <= table[f"{m}_hi"]).all()
+    is_ref = table["model"] == run_main.REFERENCE
+    assert table.loc[is_ref, "log_loss_vs_logistic"].isna().all()
+    others = table[~is_ref]
+    assert others["log_loss_vs_logistic"].notna().all()
+    assert (others["log_loss_vs_logistic_lo"] <= others["log_loss_vs_logistic"]).all()
+    assert (others["log_loss_vs_logistic"] <= others["log_loss_vs_logistic_hi"]).all()
 
     n_test = len(pd.read_parquet(tmp / "interim_dir/test.parquet"))
     preds = pd.read_csv(tmp_path / "test_predictions.csv")
@@ -105,12 +153,23 @@ def test_run_main_end_to_end_on_fake_features(fake_features, tmp_path):
 
     # Predictions line up with the test labels by battle_id.
     _, y_test = load_features("test", processed_dir=processed)
-    first = preds[(preds["model"] == "logistic") & (preds["setting"] == "teams_only")]
-    assert first["y"].tolist() == y_test.loc[first["battle_id"]].tolist()
+    for (model, setting), group in preds.groupby(["model", "setting"]):
+        assert group["y"].tolist() == y_test.loc[group["battle_id"]].tolist()
 
     curve = pd.read_csv(tmp_path / "logistic_c_curve.csv")
     assert len(curve) == 2 * len(cfg["models"]["logistic"]["C_grid"])
     assert curve.groupby("setting")["best"].sum().eq(1).all()
     coefs = pd.read_csv(tmp_path / "logistic_top_coefficients.csv")
-    assert not coefs[coefs["setting"] == "teams_only"]["feature"].str.startswith("rating_").any()
-    assert coefs[coefs["setting"] == "teams_ratings"]["feature"].notna().all()
+    assert not coefs[coefs["setting"] == "teams only"]["feature"].str.startswith("rating_").any()
+    assert coefs[coefs["setting"] == "teams + ratings"]["feature"].notna().all()
+
+
+def test_analyze_errors_reads_run_main_output(fake_features, tmp_path):
+    # Andy's error analysis must accept the prediction file run_main writes.
+    from experiments.analyze_errors import analyze_predictions
+    cfg, tmp = fake_features
+    run_main.main(models=["logistic"], cfg=cfg, processed_dir=tmp / "processed_dir",
+                  results_dir=tmp_path, figures_dir=tmp_path / "figures")
+    preds = pd.read_csv(tmp_path / "test_predictions.csv", dtype={"battle_id": str})
+    summary, examples = analyze_predictions(preds, pd.read_parquet(tmp / "interim_dir/test.parquet"))
+    assert len(summary) == 2 and summary["n"].eq(len(preds) // 2).all()
