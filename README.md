@@ -53,7 +53,7 @@ Each code file below starts with a TODO list of what it needs.
 |---|---|---|---|
 | Alexander | `src/data/`, `src/features/` | Data | ✅ Data, features, Data section draft and figures done |
 | Andy | `src/models/baselines.py`, `experiments/run_baselines.py` | Background, Methods (features), Experiments (wrong predictions) | Baselines implemented and validated on real data. Background and Methods drafts complete. Final test evaluation and wrong-prediction analysis pending. |
-| Nguyen Hang | `src/models/logistic.py`, `experiments/run_main.py` | Methods (models), Experiments (main table) | ⬜ To do |
+| Nguyen Hang | `src/models/logistic.py`, `experiments/run_main.py` | Methods (models), Experiments (main table) | 🟨 Logistic + `run_main` done (val: 53.8% / 0.6874 teams only, 54.7% / 0.6862 + ratings); run_main picks up trees once they exist. Report sections to do |
 | Ruel | `src/models/trees.py`, `src/evaluation/plots.py`, `experiments/run_ablation.py` | Experiments (figures, ablation) | ⬜ To do |
 | Everyone | | Abstract, Introduction, Conclusion | ⬜ To do |
 
