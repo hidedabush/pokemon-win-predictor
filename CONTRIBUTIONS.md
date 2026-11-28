@@ -14,6 +14,9 @@ Add a line whenever you finish something. This becomes the required page-1 footn
 | 11/27 | Alexander | Feature check on val: `learned_prior` 20 → 100, wider logistic C grid; stale-feature check in `load_features()`, `CHANGELOG.md` |
 | 11/27 | Andy | Implemented four rule-based baselines, baseline evaluation, synthetic unit tests, and error-analysis functionality. Successfully evaluated baselines on 15,000 validation battles. Drafted Background and Methods (features) sections. |
 | 11/27 | Nguyen Hang | L2 logistic regression with C tuned on val, top coefficients (`src/models/logistic.py`); main experiment script (`experiments/run_main.py`); tests (`tests/test_models.py`) |
+| 11/27 | Ruel | Random forest + gradient boosting, tuned on val (`src/models/trees.py`, `experiments/run_trees.py`) |
+| 11/27 | Ruel | Report figures (`src/evaluation/plots.py`): calibration, feature importance, hyperparameter curves, ablation bar |
+| 11/28 | Ruel | Ablation study + learning curve (`experiments/run_ablation.py`) |
 
 ## Draft footnote (fill in at the end)
 
